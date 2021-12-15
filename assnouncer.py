@@ -2,7 +2,9 @@ from asyncio.tasks import sleep
 from asyncio.windows_events import SelectorEventLoop
 from dataclasses import dataclass
 import json
+from logging import exception
 from typing import List
+from urllib import request
 import discord
 import os
 from discord.gateway import DiscordClientWebSocketResponse
@@ -10,7 +12,10 @@ from discord.player import AudioPlayer
 import pytube
 import io
 import regex
+import traceback
 
+from sclib import SoundcloudAPI
+soundcloud = SoundcloudAPI()
 
 client = discord.Client()
 
@@ -79,9 +84,18 @@ async def on_ready():
 def mostly_equal(a: str, b: str) -> bool:
     return levenshtein_ratio_and_distance(a, b) < 3
 
+def is_link(link: str) -> bool:
+    return link.startswith("http")
+
+def is_soundcloud_link(link: str) -> bool:
+    return link.startswith("https://www.soundcloud.com/") or link.startswith("https://soundcloud.com/")
+
+def is_youtube_link(link: str) -> bool:
+    return link.startswith("https://www.youtube.com/watch?v=") or link.startswith("https://youtube.com/watch?v=")
+
 
 async def queue_song(q: str):
-    if q.startswith("https://www.youtube.com/watch?v="):
+    if is_link(q):
         queue.append(q)
     elif len(q) > 3:
         if mostly_equal(q, "careless whisper"):
@@ -97,25 +111,55 @@ async def queue_song(q: str):
         await play_queue()
 
 
+async def send_to_general(msg):
+    await gg.mein_kampf.text_channels[0].send(msg)
+
 async def play_queue():
     while queue:
         if gg.vc.is_playing():
             await sleep(0.3)
             continue
 
+        if not queue:
+            continue
+
         print('after loopty loop')
         q: str = queue[0]
 
-        yt = pytube.YouTube(q)
-        stream = yt.streams.get_audio_only()
-        if stream:
-            stream.download(filename="streamcache")
-            src = await discord.FFmpegOpusAudio.from_probe(
-                source="streamcache",
-                executable=r"C:\Users\Braynstorm\Downloads\ffmpeg\ffmpeg.exe",
-            )
-            gg.vc.play(src, after=lambda x: queue.pop(0))
+        if is_youtube_link(q):
+            yt = pytube.YouTube(q)
+            await send_to_general(f"Playing '{q}'")
+            stream = yt.streams.get_audio_only()
+            if stream:
+                stream.download(filename="streamcache")
+                src = await discord.FFmpegOpusAudio.from_probe(
+                    source="streamcache",
+                    executable=r"C:\Users\Braynstorm\Downloads\ffmpeg\ffmpeg.exe",
+                )
+                gg.vc.play(src, after=lambda x: queue.pop(0))
+            else:
+                await send_to_general(f"No audio-only stream found. Request will be skipped")
+                if queue:
+                    queue.pop()
+        else:
+            try:
+                path = ""
+                if is_soundcloud_link(q):
+                    # NOTE(braynstorm): It's a soundcloud link
+                    sc_stuff = soundcloud.resolve(q)
+                    path = sc_stuff.get_stream_url();
+                else:
+                    # NOTE(braynstorm): It's a direct link. Download and play it
+                    path, _ = request.urlretrieve(q, filename="downloads/tmp")
 
+                src = await discord.FFmpegOpusAudio.from_probe(
+                    source=path,
+                    executable=r"C:\Users\Braynstorm\Downloads\ffmpeg\ffmpeg.exe",
+                )
+                gg.vc.play(src, after=lambda x: queue.pop(0))
+            except:
+                await send_to_general(traceback.format_exc())
+                queue.pop(0)
 
 @client.event
 async def on_voice_state_update(
@@ -127,7 +171,7 @@ async def on_voice_state_update(
         just_joined = before.channel is None and after.channel is not None
         just_unmuted = before.self_mute and not after.self_mute
 
-        if just_joined or just_unmuted:
+        if just_joined:
             print("Joined!", str(member))
             if not os.path.exists(theme_path):
                 print("No theme for", theme_path)
