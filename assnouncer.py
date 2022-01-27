@@ -3,7 +3,7 @@ from asyncio.windows_events import SelectorEventLoop
 from dataclasses import dataclass
 import json
 from logging import exception
-from typing import List
+from typing import List, NewType, Union, Type
 from urllib import request
 import discord
 import os
