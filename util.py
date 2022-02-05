@@ -38,7 +38,17 @@ def can_download(uri: str):
     return any(d.accept(uri) for d in BaseDownloader.get_instances())
 
 
-async def load_source(uri: Union[Path, str]) -> FFmpegOpusAudio:
+def resolve_uri(query: str) -> str:
+    if can_download(query):
+        return query
+    else:
+        return search_song(query)
+
+
+async def load_source(uri: Path) -> FFmpegOpusAudio:
+    if not uri.is_file():
+        return None
+
     return await FFmpegOpusAudio.from_probe(
         source=str(uri),
         executable=str(FFMPEG_PATH)
@@ -46,9 +56,7 @@ async def load_source(uri: Union[Path, str]) -> FFmpegOpusAudio:
 
 
 async def download(uri: str, filename: Path = None, force: bool = False):
-    if not can_download(uri):
-        uri = search_song(uri)
-
+    uri = resolve_uri(uri)
     if uri is None or not can_download(uri):
         print("[warn] Requested song could not be found or is not supported")
         return None

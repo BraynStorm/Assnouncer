@@ -70,15 +70,17 @@ class Assnouncer(Client):
         while True:
             while self.is_playing():
                 if len(self.queue) > 1:
-                    await util.download(self.queue[1])
+                    uri = self.queue[1]
+                    await util.download(uri)
                 await sleep(0.1)
 
             while not self.queue:
                 await sleep(0.3)
 
-            song = await util.download(self.queue[0])
+            uri = self.queue[0]
 
-            await self.message(f"Playing '{song.uri}'")
+            await self.message(f"Playing '{uri}'")
+            song = await util.download(uri)
 
             if song.source is not None:
                 self.voice.play(song.source, after=pop)
@@ -101,7 +103,7 @@ class Assnouncer(Client):
         return await self.song_loop()
 
     def queue_song(self, query: str):
-        self.queue.append(query)
+        self.queue.append(util.resolve_uri(query))
 
     async def play_theme(self, user: Member):
         theme_path = util.get_theme_path(user)
