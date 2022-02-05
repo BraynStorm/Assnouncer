@@ -1,258 +1,185 @@
+from __future__ import annotations
+
+import util
+
+from dataclasses import dataclass, field
 from asyncio.tasks import sleep
-from asyncio.windows_events import SelectorEventLoop
-from dataclasses import dataclass
-import json
-from logging import exception
-from typing import List, NewType, Union, Type
-from urllib import request
-import discord
-import os
-from discord.gateway import DiscordClientWebSocketResponse
+from typing import Any, List
+from pathlib import Path
 from discord.player import AudioPlayer
-import pytube
-import io
-import regex
-import traceback
+from discord import Client, Game, FFmpegOpusAudio, TextChannel, Message, Guild, VoiceClient, Member, VoiceState
 
-from sclib import SoundcloudAPI
-soundcloud = SoundcloudAPI()
+from pytube import YouTube, Search
 
-client = discord.Client()
+from commands import BaseCommand
+from downloaders import BaseDownloader
 
 
 @dataclass
-class G:
-    mein_kampf: discord.Guild = None
-    vc: discord.VoiceClient = None
+class LoadedSong:
+    uri: str
+    source: FFmpegOpusAudio
 
 
-gg = G()
-queue = []
+@dataclass
+class Assnouncer(Client):
+    queue: List[str] = field(default_factory=list)
+    server: Guild = None
+    general: TextChannel = None
+    voice: VoiceClient = None
 
+    def __post_init__(self):
+        super().__init__()
 
-def levenshtein_ratio_and_distance(s, t):
-    """levenshtein_ratio_and_distance:
-    Calculates levenshtein distance between two strings.
-    If ratio_calc = True, the function computes the
-    levenshtein distance ratio of similarity between two strings
-    For all i and j, distance[i,j] will contain the Levenshtein
-    distance between the first i characters of s and the
-    first j characters of t
-    """
-    import numpy as np
+    @staticmethod
+    def search_song(query: str) -> str:
+        results: List[YouTube]
+        results, _ = Search(query).fetch_and_parse()
+        if results:
+            return results[0].watch_url
 
-    # Initialize matrix of zeros
-    rows = len(s) + 1
-    cols = len(t) + 1
-    distance = np.zeros((rows, cols), dtype=int)
+    def is_playing(self) -> bool:
+        return self.voice.is_playing()
 
-    # Populate matrix of zeros with the indices of each character of both strings
-    for i in range(1, rows):
-        for k in range(1, cols):
-            distance[i][0] = i
-            distance[0][k] = k
+    def skip(self):
+        self.voice.stop
 
-    # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
-    for col in range(1, cols):
-        for row in range(1, rows):
-            if s[row - 1] == t[col - 1]:
-                cost = 0  # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
-            else:
-                # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
-                # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
-                cost = 1
-            distance[row][col] = min(
-                distance[row - 1][col] + 1,  # Cost of deletions
-                distance[row][col - 1] + 1,  # Cost of insertions
-                distance[row - 1][col - 1] + cost,
-            )  # Cost of substitutions
-    return distance[row][col]
+    def stop(self):
+        self.queue = []
+        self.skip()
 
+    async def play_now(self, source: FFmpegOpusAudio):
+        vc: VoiceClient = self.voice
+        if vc.is_playing():
+            old_source: AudioPlayer = gg.voice._player
+            old_source.pause()
 
-@client.event
-async def on_ready():
-    print("GETTING READY")
-    await client.change_presence(activity=discord.Game(name="Getting ready"))
+            vc._player = None
+            vc.play(source)
+            while vc.is_playing():
+                await sleep(0.3)
+            vc.stop()
 
-    gg.mein_kampf = client.get_guild(642747343208185857)
-    gg.vc = await gg.mein_kampf.voice_channels[0].connect(timeout=2000, reconnect=True)
-
-    await client.change_presence(activity=discord.Game(name="Ready"))
-    print("READY")
-
-
-def mostly_equal(a: str, b: str) -> bool:
-    return levenshtein_ratio_and_distance(a, b) < 3
-
-def is_link(link: str) -> bool:
-    return link.startswith("http")
-
-def is_soundcloud_link(link: str) -> bool:
-    return link.startswith("https://www.soundcloud.com/") or link.startswith("https://soundcloud.com/")
-
-def is_youtube_link(link: str) -> bool:
-    return link.startswith("https://www.youtube.com/watch?v=") or link.startswith("https://youtube.com/watch?v=")
-
-
-async def queue_song(q: str):
-    if is_link(q):
-        queue.append(q)
-    elif len(q) > 3:
-        if mostly_equal(q, "careless whisper"):
-            q = "https://www.youtube.com/watch?v=iik25wqIuFo"
-            queue.append(q)
+            vc._player = old_source
+            vc.resume()
         else:
-            list_results: List[pytube.YouTube] = pytube.Search(q).fetch_and_parse()[0]
-            queue.append(list_results[0].watch_url)
-    else:
-        return
+            vc.play(source)
 
-    if len(queue) == 1:
-        await play_queue()
+    def set_activity(self, activity: str):
+        return self.change_presence(activity=Game(name=activity))
 
+    def message(self, message: str, channel: TextChannel = None):
+        if channel is None:
+            channel = self.general
 
-async def send_to_general(msg):
-    await gg.mein_kampf.text_channels[0].send(msg)
+        return channel.send(message)
 
-async def play_queue():
-    while queue:
-        if gg.vc.is_playing():
-            await sleep(0.3)
-            continue
+    async def download_song(self, uri: str) -> FFmpegOpusAudio:
+        downloaders = BaseDownloader.get_instances()
+        if all(not downloader.accept(uri) for downloader in downloaders):
+            uri = Assnouncer.search_song(uri)
 
-        if not queue:
-            continue
+        filename = util.get_download_path(uri)
 
-        print('after loopty loop')
-        q: str = queue[0]
+        async def load_song():
 
-        if is_youtube_link(q):
-            yt = pytube.YouTube(q)
-            await send_to_general(f"Playing '{q}'")
-            stream = yt.streams.get_audio_only()
-            if stream:
-                stream.download(filename="streamcache")
-                src = await discord.FFmpegOpusAudio.from_probe(
-                    source="streamcache",
-                    executable=r"C:\Users\Braynstorm\Downloads\ffmpeg\ffmpeg.exe",
-                )
-                gg.vc.play(src, after=lambda x: queue.pop(0))
-            else:
-                await send_to_general(f"No audio-only stream found. Request will be skipped")
-                if queue:
-                    queue.pop()
-        else:
-            try:
-                path = ""
-                if is_soundcloud_link(q):
-                    # NOTE(braynstorm): It's a soundcloud link
-                    sc_stuff = soundcloud.resolve(q)
-                    path = sc_stuff.get_stream_url();
-                else:
-                    # NOTE(braynstorm): It's a direct link. Download and play it
-                    path, _ = request.urlretrieve(q, filename="downloads/tmp")
-
-                src = await discord.FFmpegOpusAudio.from_probe(
-                    source=path,
-                    executable=r"C:\Users\Braynstorm\Downloads\ffmpeg\ffmpeg.exe",
-                )
-                gg.vc.play(src, after=lambda x: queue.pop(0))
-            except:
-                await send_to_general(traceback.format_exc())
-                queue.pop(0)
-
-@client.event
-async def on_voice_state_update(
-    member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
-):
-    if member != client.user:
-        theme_path: str = f"theme_db/{member}"
-
-        just_joined = before.channel is None and after.channel is not None
-        just_unmuted = before.self_mute and not after.self_mute
-
-        if just_joined:
-            print("Joined!", str(member))
-            if not os.path.exists(theme_path):
-                print("No theme for", theme_path)
-                return
-            src = await discord.FFmpegOpusAudio.from_probe(
-                source=theme_path,
-                executable=r"C:\Users\Braynstorm\Downloads\ffmpeg\ffmpeg.exe",
+            return LoadedSong(
+                uri=uri,
+                source=await util.load_source(filename)
             )
-            if gg.vc.is_playing():
-                old_source : AudioPlayer= gg.vc._player
-                old_source.pause()
 
-                gg.vc._player = None
-                gg.vc.play(src)
-                while gg.vc.is_playing():
-                    await sleep(0.3)
-                gg.vc.stop()
+        if filename.is_file():
+            return await load_song()
 
-                gg.vc._player = old_source
-                gg.vc.resume()
+        for downloader in downloaders:
+            if downloader.accept(uri):
+                print(f"[info] Downloading via {downloader.__name__}")
+                if downloader.download(uri, filename):
+                    break
+
+        return await load_song()
+
+    async def download_from_queue(self, idx: int) -> LoadedSong:
+        if len(self.queue) > idx:
+            uri = self.queue[idx]
+            return await self.download_song(uri)
+
+    async def song_loop(self):
+        def pop(*_):
+            if self.queue:
+                self.queue.pop(0)
+
+        while True:
+            while self.is_playing():
+                if len(self.queue) > 1:
+                    await self.download_from_queue(1)
+                await sleep(0.1)
+
+            while not self.queue:
+                await sleep(0.3)
+
+            song = await self.download_from_queue(0)
+
+            await self.message(f"Playing '{song.uri}'")
+
+            if song.source is not None:
+                self.voice.play(song.source, after=pop)
             else:
-                gg.vc.play(src)
+                print(f"[warn] No source found for '{song.uri}'")
+                await self.message(f"No source found - skipping song")
 
+    async def on_ready(self):
+        print("[info] Getting ready")
+        await self.set_activity("Getting ready")
 
-@client.event
-async def on_message(msg: discord.Message):
-    print(msg)
+        self.server = self.get_guild(642747343208185857)
+        self.general = self.server.text_channels[0]
+        self.voice = await self.server.voice_channels[0].connect(timeout=2000, reconnect=True)
 
-    theme_path: str = f"theme_db/{msg.author}"
-    text_channel = gg.mein_kampf.text_channels[0]
+        await self.set_activity("Ready")
+        print("[info] Ready")
 
-    if not gg.vc:
-        await on_ready()
-        return
-    elif msg.author == client.user:
-        return
-    elif msg.content == "queue":
-        c: discord.TextChannel = msg.channel
+        return await self.song_loop()
 
-        queue_str = "```Queue is empty```"
-        if queue:
-            queue_str = "```"
-            for i, s in enumerate(queue):
-                queue_str += f"{i}: {s}\n"
-            queue_str += "\n```"
-        await c.send(content=queue_str)
-    elif msg.content == "stop" or msg.content == "не ме занимавай с твоите глупости" or msg.content == "dilyankata":
-        queue.clear()
-        gg.vc.stop()
-    elif msg.content == "next":
-        gg.vc.stop()
-    elif msg.content.startswith("set my theme "):
-        await text_channel.send("Setting your theme...")
-        theme = msg.content[len("set my theme ") :]
-        stream = pytube.YouTube(theme).streams.get_audio_only()
-        if stream:
-            stream.download(filename=theme_path)
-            await text_channel.send("Done!")
+    def queue_song(self, query: str):
+        self.queue.append(query)
+
+    async def play_theme(self, user: str):
+        theme_path = util.get_theme_path(user)
+        new_source = util.load_source(theme_path)
+
+        if new_source is None:
+            print(f"[warn] No theme for {user}")
         else:
-            await text_channel.send("Failed to set your theme. Old one remains.")
+            await self.play_now(await new_source)
 
-    elif msg.content.startswith("move "):
-        parts: List[str] = msg.content.split(" ")
-        if len(parts) == 3:
-            parts = list(map(int, parts[1:]))
-            parts = min(parts), max(parts)
+    async def on_voice_state_update(
+        self,
+        member: Member,
+        before: VoiceState,
+        after: VoiceState
+    ):
+        if member == self.user:
+            return
 
-    elif msg.content.startswith("swap "):
-        parts: List[str] = msg.content.split(" ")
-        if len(parts) == 3:
-            parts = list(map(int, parts[1:]))
-            parts = min(parts), max(parts)
+        prev_channel = before.channel
+        next_channel = after.channel
+        if prev_channel is None and next_channel is not None:
+            print(f"[chat] <{next_channel.name}: {member} has joined")
+            await self.play_theme(f"{member.name}#{member.discriminator}")
 
-            first = queue[parts[0]]
-            second = queue[parts[1]]
-            queue[parts[0]] = second
-            queue[parts[1]] = first
+    async def on_message(self, message: Message):
+        if self.voice is None:
+            return
 
-    elif msg.content.startswith("play "):
-        q = msg.content[5:]
-        await queue_song(q)
+        for command in BaseCommand.get_instances():
+            command_args = command.parse(message.content)
+            if command_args is not None:
+                print(f"[info] Received {command.__name__}")
+                await command.on_command(self, command_args)
+                break
 
 
-client.run(open('token').read())
+if __name__ == "__main__":
+    ass = Assnouncer()
+    ass.run(Path("token").read_text())
