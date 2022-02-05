@@ -53,11 +53,13 @@ class FallbackDownloader(BaseDownloader):
         ).returncode == 0
 
 
-class DirectDownloader(BaseDownloader):
-    PATTERNS: List[str] = [
-        r"https?://(www\.).*"
-    ]
-
-    @staticmethod
-    def download(url: str, filename: Path) -> bool:
-        return urllib.request.urlretrieve(url, str(filename))
+# TODO(daniel): Verify that the url points to something playable
+#
+# class DirectDownloader(BaseDownloader):
+#     PATTERNS: List[str] = [
+#         r"https?://(www\.).*"
+#     ]
+#
+#     @staticmethod
+#     def download(url: str, filename: Path) -> bool:
+#         return urllib.request.urlretrieve(url, str(filename))
