@@ -84,6 +84,7 @@ class Assnouncer(Client):
                 self.voice.play(song.source, after=pop)
             else:
                 print(f"[warn] No source found for '{song.uri}'")
+                pop()
                 await self.message(f"No source found - skipping song")
 
     async def on_ready(self):
