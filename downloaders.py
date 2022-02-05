@@ -35,19 +35,25 @@ class FallbackDownloader(BaseDownloader):
     PATTERNS: List[str] = [
         r"https://youtu.be/.*",
         r"https://(www\.)?youtube\.com/watch\?v=.*",
-        r"https://(www\.)?soundcloud\.com/.*"
+        r"https://(www\.)?soundcloud\.com/.*",
+        r"https://(www\.)?open\.spotify\.com/track/.*",
+        # TODO(daniel): Dailymotion download takes ages
+        #   r"https://(www\.)?dailymotion\.com/video/.*",
+        r"https://(www\.)?vimeo\.com/.*"
     ]
 
     @staticmethod
     def download(url: str, filename: Path) -> bool:
         return subprocess.run(
             f"yt-dlp "
+            f"-x "
+            f"-i "
             f"-f ba "
-            f"--ignore-errors "
-            f"--extract-audio "
+            f"-o {filename.with_suffix('')}.%(ext)s "
+            f"--http-chunk-size 10M "
+            f"--buffer-size 32K "
             f"--audio-format vorbis "
             f"--audio-quality 160K "
-            f"--output {filename.with_suffix('')}.%(ext)s "
             f"--ffmpeg-location {FFMPEG_DIR} "
             f"{url}"
         ).returncode == 0
