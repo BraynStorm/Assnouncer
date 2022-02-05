@@ -7,11 +7,20 @@ from config import FFMPEG_DIR
 from metaclass import Descriptor
 from typing import List
 from pathlib import Path
-from sclib import SoundcloudAPI
 
 
 class BaseDownloader(metaclass=Descriptor):
     PATTERNS: List[str] = None
+
+    @classmethod
+    def validate(cls):
+        if cls == BaseDownloader:
+            return
+            
+        msg = "PATTERNS must be a non-empty list of str"
+        assert cls.PATTERNS, msg
+        assert isinstance(cls.PATTERNS, list), msg
+        assert all(isinstance(k, str) for k in cls.PATTERNS), msg
 
     @classmethod
     def accept(cls, url: str) -> bool:

@@ -25,11 +25,25 @@ class CommandData:
     parse_method: CommandType
     keyword: str
     argument: str = None
+    payload: str = None
 
 
 class BaseCommand(metaclass=Descriptor):
-    KEYWORDS: List[str] = None
     TYPE: CommandType = None
+    KEYWORDS: List[str] = None
+
+    @classmethod
+    def validate(cls):
+        if cls == BaseCommand:
+            return
+
+        msg = "TYPE must be a CommandType"
+        assert isinstance(cls.TYPE, CommandType), msg
+
+        msg = "KEYWORDS must be a non-empty list of str"
+        assert cls.KEYWORDS, msg
+        assert isinstance(cls.KEYWORDS, list), msg
+        assert all(isinstance(k, str) for k in cls.KEYWORDS), msg
 
     @classmethod
     def parse(cls, message: Message) -> CommandData:
@@ -59,17 +73,17 @@ class BaseCommand(metaclass=Descriptor):
 
 
 class PlayCommand(BaseCommand):
-    KEYWORDS: List[str] = ["play "]
     TYPE: CommandType = CommandType.BEGIN
+    KEYWORDS: List[str] = ["play "]
 
     @staticmethod
     async def on_command(ass: Assnouncer, data: CommandData):
-        ass.queue_song(data.argument)
+        ass.queue_song(data.payload)
 
 
 class QueueCommand  (BaseCommand):
-    KEYWORDS: List[str] = ["queue"]
     TYPE: CommandType = CommandType.EXACT
+    KEYWORDS: List[str] = ["queue"]
 
     @staticmethod
     async def on_command(ass: Assnouncer, _: CommandData):
@@ -80,12 +94,12 @@ class QueueCommand  (BaseCommand):
 
 
 class StopCommand(BaseCommand):
+    TYPE: CommandType = CommandType.EXACT
     KEYWORDS: List[str] = [
         "stop",
         "dilyankata",
         "не ме занимавай с твоите глупости"
     ]
-    TYPE: CommandType = CommandType.EXACT
 
     @staticmethod
     async def on_command(ass: Assnouncer, _: CommandData):
@@ -93,8 +107,8 @@ class StopCommand(BaseCommand):
 
 
 class NextCommand(BaseCommand):
-    KEYWORDS: List[str] = ["next", "skip", "маняк"]
     TYPE: CommandType = CommandType.EXACT
+    KEYWORDS: List[str] = ["next", "skip", "маняк"]
 
     @staticmethod
     async def on_command(ass: Assnouncer, _: CommandData):
@@ -102,14 +116,14 @@ class NextCommand(BaseCommand):
 
 
 class SetThemeCommand(BaseCommand):
-    KEYWORDS: List[str] = ["set my theme ", "set theme "]
     TYPE: CommandType = CommandType.BEGIN
+    KEYWORDS: List[str] = ["set my theme ", "set theme "]
 
     @staticmethod
     async def on_command(_: Assnouncer, data: CommandData):
         author = data.message.author
         song = await util.download(
-            data.argument,
+            data.payload,
             filename=util.get_theme_path(author),
             force=True
         )
