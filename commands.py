@@ -49,23 +49,23 @@ class BaseCommand(metaclass=Descriptor):
     def parse(cls, message: Message) -> CommandData:
         content: str = message.content
         for keyword in cls.KEYWORDS:
-            def make_data(argument: str = None):
+            def make_data(payload: str = None):
                 return CommandData(
                     message=message,
                     parse_method=cls.TYPE,
                     keyword=keyword,
-                    argument=argument
+                    payload=payload
                 )
 
             if cls.TYPE is CommandType.BEGIN:
                 if content.startswith(keyword):
-                    return make_data(argument=content[len(keyword):])
+                    return make_data(payload=content[len(keyword):])
             elif cls.TYPE is CommandType.EXACT:
                 if content == keyword:
                     return make_data()
             elif cls.TYPE is CommandType.END:
                 if content.endswith(keyword):
-                    return make_data(argument=content[:-len(keyword)])
+                    return make_data(payload=content[:-len(keyword)])
 
     @staticmethod
     async def on_command(ass: Assnouncer, data: CommandData):

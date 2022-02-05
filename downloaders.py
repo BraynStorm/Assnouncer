@@ -16,7 +16,7 @@ class BaseDownloader(metaclass=Descriptor):
     def validate(cls):
         if cls == BaseDownloader:
             return
-            
+
         msg = "PATTERNS must be a non-empty list of str"
         assert cls.PATTERNS, msg
         assert isinstance(cls.PATTERNS, list), msg
