@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import util
 
-from util import LoadedSong, SongRequest
+from util import SongRequest
 from dataclasses import dataclass, field
 from asyncio.tasks import sleep
 from typing import List
