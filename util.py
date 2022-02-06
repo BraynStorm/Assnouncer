@@ -27,12 +27,12 @@ class SongRequest:
 
 
 def get_theme_path(user: Member) -> Path:
-    return (THEMES_DIR / f"{user.name}#{user.discriminator}").with_suffix(".ogg")
+    return (THEMES_DIR / f"{user.name}#{user.discriminator}").with_suffix(".opus")
 
 
 def get_download_path(request: SongRequest) -> Path:
     hash_value = hashlib.md5(str(request).encode("utf8")).hexdigest()
-    return (DOWNLOAD_DIR / hash_value).with_suffix(".ogg")
+    return (DOWNLOAD_DIR / hash_value).with_suffix(".opus")
 
 
 def search_song(query: str) -> str:

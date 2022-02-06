@@ -54,8 +54,8 @@ class FallbackDownloader(BaseDownloader):
         start: Timestamp = None,
         stop: Timestamp = None
     ) -> bool:
-        filename_ogg = filename.with_suffix(".ogg")
-        filename_tmp = filename.with_suffix(".tmp.ogg")
+        filename_ogg = filename.with_suffix(".opus")
+        filename_tmp = filename.with_suffix(".tmp.opus")
         filename_ns = filename.with_suffix("")
 
         cmd = (
@@ -66,7 +66,7 @@ class FallbackDownloader(BaseDownloader):
             f"-o {filename_ns}.%(ext)s "
             f"--http-chunk-size 10M "
             f"--buffer-size 32K "
-            f"--audio-format vorbis "
+            f"--audio-format opus "
             f"--audio-quality 0 "
             f"--ffmpeg-location {FFMPEG_DIR} "
             f"{url}"
