@@ -1,92 +1,71 @@
 from __future__ import annotations
+from sqlite3 import Timestamp
 
 import util
+import commandline
 
+from util import SongRequest
+from commandline import Command, Timestamp
 from metaclass import Descriptor
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, List
-from enum import unique, IntEnum
 from discord import Message
 
 if TYPE_CHECKING:
     from assnouncer import Assnouncer
 
 
-@unique
-class CommandType(IntEnum):
-    BEGIN = 0
-    EXACT = 1
-    END = 2
-
-
-@dataclass
-class CommandData:
-    message: Message
-    parse_method: CommandType
-    keyword: str
-    argument: str = None
-    payload: str = None
-
-
 class BaseCommand(metaclass=Descriptor):
-    TYPE: CommandType = None
-    KEYWORDS: List[str] = None
+    TYPE: Command = None
+    ALIASES: List[str] = None
 
     @classmethod
     def validate(cls):
         if cls == BaseCommand:
             return
 
-        msg = "TYPE must be a CommandType"
-        assert isinstance(cls.TYPE, CommandType), msg
-
-        msg = "KEYWORDS must be a non-empty list of str"
-        assert cls.KEYWORDS, msg
-        assert isinstance(cls.KEYWORDS, list), msg
-        assert all(isinstance(k, str) for k in cls.KEYWORDS), msg
+        msg = "ALIASES must be a non-empty list of str"
+        assert cls.ALIASES, msg
+        assert isinstance(cls.ALIASES, list), msg
+        assert all(isinstance(k, str) for k in cls.ALIASES), msg
 
     @classmethod
-    def parse(cls, message: Message) -> CommandData:
+    def parse(cls, message: Message) -> Command:
         content: str = message.content
-        for keyword in cls.KEYWORDS:
-            def make_data(payload: str = None):
-                return CommandData(
-                    message=message,
-                    parse_method=cls.TYPE,
-                    keyword=keyword,
-                    payload=payload
-                )
+        command = commandline.parse(content)
 
-            if cls.TYPE is CommandType.BEGIN:
-                if content.startswith(keyword):
-                    return make_data(payload=content[len(keyword):])
-            elif cls.TYPE is CommandType.EXACT:
-                if content == keyword:
-                    return make_data()
-            elif cls.TYPE is CommandType.END:
-                if content.endswith(keyword):
-                    return make_data(payload=content[:-len(keyword)])
+        if command.name.value in cls.ALIASES:
+            return command
 
     @staticmethod
-    async def on_command(ass: Assnouncer, data: CommandData):
+    async def on_command(
+        ass: Assnouncer,
+        message: Message,
+        *args,
+        payload: str = None,
+        **kwargs
+    ):
         pass
 
 
 class PlayCommand(BaseCommand):
-    TYPE: CommandType = CommandType.BEGIN
-    KEYWORDS: List[str] = ["play "]
+    ALIASES: List[str] = ["play"]
 
     @staticmethod
-    async def on_command(ass: Assnouncer, data: CommandData):
-        ass.queue_song(data.payload)
+    async def on_command(
+        ass: Assnouncer,
+        _: Message,
+        payload: str,
+        start: Timestamp = None,
+        stop: Timestamp = None
+    ):
+        ass.queue_song(SongRequest(query=payload, start=start, stop=stop))
 
 
 class QueueCommand  (BaseCommand):
-    TYPE: CommandType = CommandType.EXACT
-    KEYWORDS: List[str] = ["queue"]
+    ALIASES: List[str] = ["queue"]
 
     @staticmethod
-    async def on_command(ass: Assnouncer, _: CommandData):
+    async def on_command(ass: Assnouncer, _: Message, payload: str = None):
         queue_content = "\n".join(f"{i}: {q}" for i, q in enumerate(ass.queue))
         if not queue_content:
             queue_content = "Queue is empty."
@@ -94,36 +73,38 @@ class QueueCommand  (BaseCommand):
 
 
 class StopCommand(BaseCommand):
-    TYPE: CommandType = CommandType.EXACT
-    KEYWORDS: List[str] = [
+    ALIASES: List[str] = [
         "stop",
         "dilyankata",
-        "не ме занимавай с твоите глупости"
     ]
 
     @staticmethod
-    async def on_command(ass: Assnouncer, _: CommandData):
+    async def on_command(ass: Assnouncer, _: Message, payload: str = None):
         ass.stop()
 
 
 class NextCommand(BaseCommand):
-    TYPE: CommandType = CommandType.EXACT
-    KEYWORDS: List[str] = ["next", "skip", "маняк"]
+    ALIASES: List[str] = ["next", "skip", "маняк"]
 
     @staticmethod
-    async def on_command(ass: Assnouncer, _: CommandData):
+    async def on_command(ass: Assnouncer, _: Message, payload: str = None):
         ass.skip()
 
 
 class SetThemeCommand(BaseCommand):
-    TYPE: CommandType = CommandType.BEGIN
-    KEYWORDS: List[str] = ["set my theme ", "set theme "]
+    ALIASES: List[str] = ["settheme", "set_theme"]
 
     @staticmethod
-    async def on_command(_: Assnouncer, data: CommandData):
-        author = data.message.author
+    async def on_command(
+        _: Assnouncer,
+        message: Message,
+        payload: str,
+        start: Timestamp = None,
+        stop: Timestamp = None
+    ):
+        author = message.author
         song = await util.download(
-            data.payload,
+            SongRequest(query=payload, start=start, stop=stop),
             filename=util.get_theme_path(author),
             force=True
         )

@@ -2,19 +2,22 @@ from __future__ import annotations
 
 import util
 
-from util import LoadedSong
+from util import LoadedSong, SongRequest
 from dataclasses import dataclass, field
 from asyncio.tasks import sleep
 from typing import List
 from pathlib import Path
-from discord.player import AudioPlayer
-from discord import Client, Game, FFmpegOpusAudio, TextChannel, Message, Guild, VoiceClient, Member, VoiceState
 from commands import BaseCommand
+from discord.player import AudioPlayer
+from discord import (
+    Client, Game, FFmpegOpusAudio, TextChannel,
+    Message, Guild, VoiceClient, Member, VoiceState
+)
 
 
 @dataclass
 class Assnouncer(Client):
-    queue: List[str] = field(default_factory=list)
+    queue: List[SongRequest] = field(default_factory=list)
     server: Guild = None
     general: TextChannel = None
     voice: VoiceClient = None
@@ -57,11 +60,6 @@ class Assnouncer(Client):
 
         return channel.send(message)
 
-    async def download_from_queue(self, idx: int) -> LoadedSong:
-        if len(self.queue) > idx:
-            uri = self.queue[idx]
-            return await util.download(uri)
-
     async def song_loop(self):
         def pop(*_):
             if self.queue:
@@ -70,23 +68,35 @@ class Assnouncer(Client):
         while True:
             while self.is_playing():
                 if len(self.queue) > 1:
-                    uri = self.queue[1]
-                    await util.download(uri)
+                    request = self.queue[1]
+                    await util.download(request)
                 await sleep(0.1)
 
             while not self.queue:
                 await sleep(0.3)
 
-            uri = self.queue[0]
+            request = self.queue[0]
 
-            await self.message(f"Playing '{uri}'")
-            song = await util.download(uri)
+            span = ""
+            if request.start is not None or request.stop is not None:
+                start = ""
+                stop = ""
+
+                if request.start is not None:
+                    start = request.start.text
+
+                if request.stop is not None:
+                    stop = request.stop.text
+                span = f"[{start}-{stop}]"
+
+            await self.message(f"Playing '{request.query}' {span}")
+            song = await util.download(request)
 
             if song.source is not None:
                 self.voice.play(song.source, after=pop)
             else:
-                print(f"[warn] No source found for '{song.uri}'")
                 pop()
+                print(f"[warn] No source found for '{song.uri}'")
                 await self.message(f"No source found - skipping song")
 
     async def on_ready(self):
@@ -102,8 +112,9 @@ class Assnouncer(Client):
 
         return await self.song_loop()
 
-    def queue_song(self, query: str):
-        self.queue.append(util.resolve_uri(query))
+    def queue_song(self, request: SongRequest):
+        request.query = util.resolve_uri(request.query)
+        self.queue.append(request)
 
     async def play_theme(self, user: Member):
         theme_path = util.get_theme_path(user)
@@ -133,11 +144,19 @@ class Assnouncer(Client):
         if self.voice is None:
             return
 
-        for command in BaseCommand.get_instances():
-            command_args = command.parse(message)
-            if command_args is not None:
-                print(f"[info] Received {command.__name__}")
-                await command.on_command(self, command_args)
+        for command_type in BaseCommand.get_instances():
+            command = command_type.parse(message)
+            if command is not None:
+                print(f"[info] Received {command_type.__name__}")
+                args = command.args or []
+                kwargs = command.kwargs or {}
+                await command_type.on_command(
+                    self,
+                    message,
+                    *args,
+                    payload=command.payload,
+                    **kwargs
+                )
                 break
 
 
