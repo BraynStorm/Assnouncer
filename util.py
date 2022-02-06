@@ -31,7 +31,18 @@ def get_theme_path(user: Member) -> Path:
 
 
 def get_download_path(request: SongRequest) -> Path:
-    hash_value = hashlib.md5(str(request).encode("utf8")).hexdigest()
+    start = None
+    if request.start is not None:
+        start = request.start.value
+
+    stop = None
+    if request.stop is not None:
+        stop = request.stop.value
+
+    # NOTE(daniel):
+    #  Using Timestamp.value ensures that "0:0" is the same as "00:00"
+    hash_string = f"[{start}-{stop}] {request.query}"
+    hash_value = hashlib.md5(hash_string.encode("utf8")).hexdigest()
     return (DOWNLOAD_DIR / hash_value).with_suffix(".opus")
 
 
@@ -63,7 +74,11 @@ async def load_source(uri: Path) -> FFmpegOpusAudio:
     )
 
 
-async def download(request: SongRequest, filename: Path = None, force: bool = False):
+async def download(
+    request: SongRequest,
+    filename: Path = None,
+    force: bool = False
+) -> LoadedSong:
     uri = resolve_uri(request.query)
     if uri is None or not can_download(uri):
         print("[warn] Requested song could not be found or is not supported")
@@ -83,6 +98,9 @@ async def download(request: SongRequest, filename: Path = None, force: bool = Fa
         if downloader.accept(uri):
             print(f"[info] Downloading via {downloader.__name__}")
             if downloader.download(uri, filename, start=request.start, stop=request.stop):
+                print("[info] Download successful")
                 break
+            else:
+                print("[warn] Download unsuccessful")
 
     return await load_song()
