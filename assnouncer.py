@@ -8,6 +8,7 @@ from asyncio.tasks import sleep
 from typing import List
 from pathlib import Path
 from commands import BaseCommand
+from commandline import Timestamp
 from discord.player import AudioPlayer
 from discord import (
     Client, Game, FFmpegOpusAudio, TextChannel,
@@ -108,7 +109,17 @@ class Assnouncer(Client):
         self.voice = await self.server.voice_channels[0].connect(timeout=2000, reconnect=True)
 
         await self.set_activity("Ready")
+
         print("[info] Ready")
+
+        main_theme = await util.download(
+            SongRequest(
+                query="https://www.youtube.com/watch?v=atuFSv2bLa8",
+                start=Timestamp.parse("00:19"),
+                stop=Timestamp.parse("00:23")
+            )
+        )
+        await self.play_now(main_theme.source)
 
         return await self.song_loop()
 
