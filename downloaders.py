@@ -1,7 +1,7 @@
 import subprocess
 import regex
 
-from config import FFMPEG_DIR
+from config import FFMPEG_DIR, FFMPEG_PATH
 
 from commandline import Timestamp
 from metaclass import Descriptor
@@ -78,10 +78,11 @@ class FallbackDownloader(BaseDownloader):
         if start is None and stop is None:
             return True
 
-        if None not in (start, stop) and start.value > stop.value:
+        if None not in (start, stop) and start.value >= stop.value:
+            print(f"[warn] Incorrect timestamp: {start.text}" >= {stop.text})
             return False
 
-        cmd = f"{FFMPEG_DIR}/ffmpeg.exe -hide_banner -loglevel error"
+        cmd = f"{FFMPEG_PATH} -hide_banner -loglevel error"
 
         if start is not None:
             cmd = f"{cmd} -ss {start.value}"

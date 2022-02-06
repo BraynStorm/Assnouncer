@@ -1,13 +1,13 @@
 from __future__ import annotations
-from sqlite3 import Timestamp
 
 import util
+import random
 import commandline
 
 from util import SongRequest
-from commandline import Command, Timestamp
+from commandline import Command, Timestamp, Identifier, String
 from metaclass import Descriptor
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Union
 from discord import Message
 
 if TYPE_CHECKING:
@@ -108,4 +108,43 @@ class SetThemeCommand(BaseCommand):
             filename=util.get_theme_path(author),
             force=True
         )
-        print(f"[info] Set theme for {author} to {song.uri}")
+        if song is not None:
+            print(f"[info] Set theme for {author} to {song.uri}")
+        else:
+            print(f"[warn] Could not set theme for {author}")
+
+
+class DumbCommand(BaseCommand):
+    ALIASES: List[str] = ["dumb", "мамкамуипрасе", "dumbdumb"]
+
+    @staticmethod
+    async def on_command(
+        ass: Assnouncer,
+        _: Message,
+        who: Union[Identifier, String],
+        payload: str = None,
+        howdumb: Union[Identifier, String] = None
+    ):
+        if howdumb is not None:
+            msg = f"{who.value} is {howdumb.value} dumb"
+        else:
+            msg = f"{who.value} is dumb"
+
+        await ass.message(msg)
+
+
+class ApricotCommand(BaseCommand):
+    ALIASES: List[str] = ["кайсий", "кайсии", "apricot"]
+
+    @staticmethod
+    async def on_command(
+        ass: Assnouncer,
+        _: Message,
+        payload: str = None
+    ):
+        memes = [
+            "https://memegenerator.net/img/instances/78370751.jpg",
+            "https://i.imgflip.com/1zcw47.jpg",
+            "https://www.memecreator.org/static/images/memes/4835791.jpg"
+        ]
+        await ass.message(random.choice(memes))
