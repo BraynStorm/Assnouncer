@@ -3,9 +3,9 @@ import regex
 
 from config import FFMPEG_DIR, FFMPEG_PATH
 
-from commandline import Timestamp
+from commandline import Timestamp, Number
 from metaclass import Descriptor
-from typing import List
+from typing import List, Union
 from pathlib import Path
 
 
@@ -30,8 +30,8 @@ class BaseDownloader(metaclass=Descriptor):
     def download(
         uri: str,
         filename: Path,
-        start: Timestamp = None,
-        stop: Timestamp = None
+        start: Union[Timestamp, Number] = None,
+        stop: Union[Timestamp, Number] = None
     ) -> bool:
         pass
 
@@ -41,7 +41,7 @@ class FallbackDownloader(BaseDownloader):
         r"https://youtu.be/.*",
         r"https://(www\.)?youtube\.com/watch\?v=.*",
         r"https://(www\.)?soundcloud\.com/.*",
-        r"https://(www\.)?open\.spotify\.com/track/.*",
+        r"https://(www\.)?open\.spotify\.com/[a-z]+/.*",
         # TODO(daniel): Dailymotion download takes ages
         #   r"https://(www\.)?dailymotion\.com/video/.*",
         r"https://(www\.)?vimeo\.com/.*"
@@ -51,8 +51,8 @@ class FallbackDownloader(BaseDownloader):
     def download(
         url: str,
         filename: Path,
-        start: Timestamp = None,
-        stop: Timestamp = None
+        start: Union[Timestamp, Number] = None,
+        stop: Union[Timestamp, Number] = None
     ) -> bool:
         filename_ogg = filename.with_suffix(".opus")
         filename_tmp = filename.with_suffix(".tmp.opus")

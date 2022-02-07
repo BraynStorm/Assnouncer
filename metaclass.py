@@ -9,12 +9,6 @@ class Descriptor(type):
     def __new__(meta, name, bases, class_dict):
         cls = super(Descriptor, meta).__new__(meta, name, bases, class_dict)
 
-        def init(*_, **__):
-            del _, __
-            raise RuntimeError("Should not instantiate this")
-
-        setattr(cls, "__init__", init)
-
         if bases:
             cls.validate()
 
