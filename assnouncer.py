@@ -6,9 +6,9 @@ from util import SongRequest
 from dataclasses import dataclass, field
 from asyncio.tasks import sleep
 from typing import List
+from threading import Event
 from pathlib import Path
 from commands import BaseCommand
-from commandline import Timestamp
 from discord.player import AudioPlayer
 from discord import (
     Client, Game, FFmpegOpusAudio, TextChannel,
@@ -18,6 +18,7 @@ from discord import (
 
 @dataclass
 class Assnouncer(Client):
+    play_event: Event = field(default_factory=Event)
     queue: List[SongRequest] = field(default_factory=list)
     server: Guild = None
     general: TextChannel = None
@@ -27,30 +28,41 @@ class Assnouncer(Client):
         super().__init__()
 
     def is_playing(self) -> bool:
-        return self.voice.is_playing()
+        return self.play_event.is_set()
 
     def skip(self):
         self.voice.stop()
+
+        self.play_event.clear()
 
     def stop(self):
         self.queue = []
         self.skip()
 
     async def play_now(self, source: FFmpegOpusAudio):
-        if self.voice.is_playing():
+        if self.is_playing():
             old_source: AudioPlayer = self.voice._player
-            old_source.pause()
+            old_source.pause(update_speaking=False)
+
+            event = Event()
+
+            def unset(*_):
+                event.set()
 
             self.voice._player = None
-            self.voice.play(source)
-            while self.voice.is_playing():
-                await sleep(0.3)
-            self.voice.stop()
+            self.voice.play(source, after=unset)
+
+            event.wait()
 
             self.voice._player = old_source
             self.voice.resume()
         else:
-            self.voice.play(source)
+            self.play_event.set()
+
+            def unset(*_):
+                self.play_event.set()
+
+            self.voice.play(source, after=unset)
 
     def set_activity(self, activity: str):
         return self.change_presence(activity=Game(name=activity))
@@ -66,15 +78,18 @@ class Assnouncer(Client):
             if self.queue:
                 self.queue.pop(0)
 
-        while True:
-            while self.is_playing():
-                if len(self.queue) > 1:
-                    request = self.queue[1]
-                    await util.download(request)
-                await sleep(0.1)
+            self.skip()
 
-            while not self.queue:
-                await sleep(0.3)
+        while True:
+            if not self.queue:
+                await sleep(0.1)
+                continue
+                
+            if self.is_playing():
+                await sleep(0.1)
+                continue
+
+            self.play_event.set()
 
             request = self.queue[0]
 
@@ -90,15 +105,8 @@ class Assnouncer(Client):
                     stop = request.stop.text
                 span = f"[{start}-{stop}]"
 
-            await self.message(f"Playing '{request.query}' {span}")
-            song = await util.download(request)
-
-            if song.source is not None:
-                self.voice.play(song.source, after=pop)
-            else:
-                pop()
-                print(f"[warn] No source found for '{song.uri}'")
-                await self.message(f"No source found - skipping song")
+            await self.message(f"Playing '{request.uri}' {span}")
+            self.voice.play(request.source, after=pop)
 
     async def on_ready(self):
         print("[info] Getting ready")
@@ -112,19 +120,18 @@ class Assnouncer(Client):
 
         print("[info] Ready")
 
-        main_theme = await util.download(
-            SongRequest(
-                query="https://www.youtube.com/watch?v=atuFSv2bLa8",
-                start=Timestamp.parse("00:19"),
-                stop=Timestamp.parse("00:23")
-            )
-        )
-        await self.play_now(main_theme.source)
+        # main_theme = await util.download(
+        #     SongRequest(
+        #         query="https://www.youtube.com/watch?v=atuFSv2bLa8",
+        #         start=Timestamp.parse("00:19"),
+        #         stop=Timestamp.parse("00:23")
+        #     )
+        # )
+        # await self.play_now(main_theme.source)
 
         return await self.song_loop()
 
     def queue_song(self, request: SongRequest):
-        request.query = util.resolve_uri(request.query)
         self.queue.append(request)
 
     async def play_theme(self, user: Member):
@@ -155,20 +162,20 @@ class Assnouncer(Client):
         if self.voice is None:
             return
 
-        for command_type in BaseCommand.get_instances():
-            command = command_type.parse(message)
-            if command is not None:
-                print(f"[info] Received {command_type.__name__}")
-                args = command.args or []
-                kwargs = command.kwargs or {}
-                await command_type.on_command(
-                    self,
-                    message,
-                    *args,
-                    payload=command.payload,
-                    **kwargs
-                )
-                break
+        if message.author == self.user:
+            return
+
+        if "\n" in message.content:
+            return
+
+        print(f"[info] Parsing: {repr(message.content)}")
+        try:
+            command = BaseCommand.parse(message.content)
+            await BaseCommand.run(self, message, command)
+        except SyntaxError as e:
+            print(f"[warn] {e}")
+        except TypeError as e:
+            print(f"[warn] {e}")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import regex
 from regex import VERSION1
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Tuple, Match, TypeVar, Type, Callable
+from typing import Dict, List, Tuple, Match, TypeVar, Type
 
 T = TypeVar("T")
 
@@ -69,9 +69,10 @@ class String(Value):
     value: str
 
     @staticmethod
-    def parse(text: str) -> String:
+    def parse(text: str, unescape: bool = True) -> String:
+        value = ast.literal_eval(text) if unescape else text
         return String(
-            value=ast.literal_eval(text),
+            value=value,
             text=text
         )
 
@@ -97,7 +98,7 @@ class Timestamp(Value):
 
 @dataclass
 class Command:
-    name: Identifier
+    name: str
     args: List[Value]
     kwargs: Dict[str, Value]
     payload: str = None
@@ -170,7 +171,7 @@ def parse_arg(tokens: List[Token]) -> Value:
         return map[first.type].parse(first.text)
 
 
-def parse_kwarg(tokens: List[Token]) -> Tuple[Identifier, Value]:
+def parse_kwarg(tokens: List[Token]) -> Tuple[str, Value]:
     if len(tokens) != 3:
         return None
 
@@ -181,7 +182,7 @@ def parse_kwarg(tokens: List[Token]) -> Tuple[Identifier, Value]:
     if second.type is not TokenType.EQUAL:
         return None
 
-    key = first.text
+    key = Identifier.parse(first.text).value
     value = parse_arg([third])
     if value is not None:
         return key, value
@@ -197,7 +198,7 @@ def parse(text: str) -> Command:
     if first.type is not TokenType.IDENTIFIER:
         raise SyntaxError("Expected name")
 
-    name = Identifier.parse(first.text)
+    name = Identifier.parse(first.text).value
 
     args = None
     kwargs = None
@@ -220,6 +221,11 @@ def parse(text: str) -> Command:
             if len(args) + len(kwargs) != len(splits):
                 raise SyntaxError("Could not parse all arguments")
 
+            keys = {k for k, _ in kwargs}
+
+            if len(keys) != len(kwargs):
+                raise SyntaxError("Duplicate kwargs")
+
             kwargs = {k: v for k, v in kwargs}
 
             tokens = tokens[idx + 1:]
@@ -228,9 +234,4 @@ def parse(text: str) -> Command:
     if tokens:
         payload = text[tokens[0].start:]
 
-    return Command(
-        name=name,
-        args=args,
-        kwargs=kwargs,
-        payload=payload
-    )
+    return Command(name=name, args=args, kwargs=kwargs, payload=payload)
