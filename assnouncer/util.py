@@ -50,7 +50,7 @@ def search_song(query: str) -> str:
     if results:
         return results[0].watch_url
     else:
-        print(f"[warn] Not Youtube results for {repr(query)}")
+        print(f"[warn] No Youtube results for {repr(query)}")
 
 
 def can_download(uri: str):
