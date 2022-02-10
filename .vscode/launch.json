@@ -8,7 +8,11 @@
             "name": "Assnouncer",
             "type": "python",
             "request": "launch",
-            "program": "assnouncer.py",
+            "module": "assnouncer.assnouncer",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}"
+            },
             "console": "integratedTerminal",
             "justMyCode": false
         }

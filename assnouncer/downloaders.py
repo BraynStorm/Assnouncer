@@ -1,10 +1,10 @@
 import subprocess
 import regex
 
-from config import FFMPEG_DIR, FFMPEG_PATH
+from assnouncer.config import FFMPEG_DIR, FFMPEG_PATH
+from assnouncer.asspp import Timestamp, Number
+from assnouncer.metaclass import Descriptor
 
-from commandline import Timestamp, Number
-from metaclass import Descriptor
 from typing import List, Union
 from pathlib import Path
 
@@ -51,8 +51,8 @@ class FallbackDownloader(BaseDownloader):
     def download(
         url: str,
         filename: Path,
-        start: Union[Timestamp, Number] = None,
-        stop: Union[Timestamp, Number] = None
+        start: Timestamp = None,
+        stop: Timestamp = None
     ) -> bool:
         filename_ogg = filename.with_suffix(".opus")
         filename_tmp = filename.with_suffix(".tmp.opus")
@@ -79,7 +79,7 @@ class FallbackDownloader(BaseDownloader):
             return True
 
         if None not in (start, stop) and start.value >= stop.value:
-            print(f"[warn] Incorrect timestamp: {start.text}" >= {stop.text})
+            print(f"[warn] Incorrect timestamp: {start.format()}" >= {stop.format()})
             return False
 
         cmd = f"{FFMPEG_PATH} -hide_banner -loglevel error"
@@ -100,15 +100,3 @@ class FallbackDownloader(BaseDownloader):
         filename_tmp.rename(filename_ogg)
 
         return True
-
-
-# TODO(daniel): Verify that the url points to something playable
-#
-# class DirectDownloader(BaseDownloader):
-#     PATTERNS: List[str] = [
-#         r"https?://(www\.).*"
-#     ]
-#
-#     @staticmethod
-#     def download(url: str, filename: Path) -> bool:
-#         return urllib.request.urlretrieve(url, str(filename))
