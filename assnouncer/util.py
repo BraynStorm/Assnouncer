@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import hashlib
 
-from config import THEMES_DIR, FFMPEG_PATH, DOWNLOAD_DIR
+from assnouncer.config import THEMES_DIR, FFMPEG_PATH, DOWNLOAD_DIR
+from assnouncer.asspp import Timestamp, Number
+from assnouncer.downloaders import BaseDownloader
 
-from commandline import Timestamp, Number
 from dataclasses import dataclass
 from typing import List, Union
 from pytube import YouTube, Search
 from pathlib import Path
 from discord import FFmpegOpusAudio, Member
-from downloaders import BaseDownloader
 
 
 @dataclass
@@ -49,6 +49,8 @@ def search_song(query: str) -> str:
     results, _ = Search(query).fetch_and_parse()
     if results:
         return results[0].watch_url
+    else:
+        print(f"[warn] No Youtube results for {repr(query)}")
 
 
 def can_download(uri: str):
@@ -80,7 +82,7 @@ async def download(
     force: bool = False
 ) -> SongRequest:
     uri = resolve_uri(query)
-    if uri is None or not can_download(uri):
+    if uri is None:
         print("[warn] Requested song could not be found or is not supported")
         return None
 
@@ -108,4 +110,3 @@ async def download(
                 return await load_song()
             else:
                 print("[warn] Download unsuccessful")
-
