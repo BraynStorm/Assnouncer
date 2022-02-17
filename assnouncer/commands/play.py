@@ -27,6 +27,6 @@ class Play(BaseCommand):
         if request is None:
             uri = util.resolve_uri(payload.value)
             print(f"[warn] No source found for '{uri}'")
-            self.respond(f"No source found - skipping song")
+            self.respond("No source found - skipping song")
         else:
             await self.ass.queue_song(request)

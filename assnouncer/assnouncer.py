@@ -82,10 +82,10 @@ class Assnouncer(Client):
                 stop = ""
 
                 if request.start != Null:
-                    start = request.start.format()
+                    start = str(request.start)
 
                 if request.stop != Null:
-                    stop = request.stop.format()
+                    stop = str(request.stop)
 
                 span = f"[{start}-{stop}]"
 
@@ -189,7 +189,7 @@ class Assnouncer(Client):
         if "\n" in message.content:
             return
 
-        print(f"[info] Parsing: {repr(message.content)}")
+        print(f"[info] Parsing: {message.content!r}")
         try:
             command = BaseCommand.parse(message.content)
             print(f"[info] Trying to run '{command}'")

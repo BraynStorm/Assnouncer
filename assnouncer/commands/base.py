@@ -4,6 +4,7 @@ import inspect
 
 from assnouncer import asspp
 
+from assnouncer import util
 from assnouncer.asspp import Command, Timestamp, String, Identifier, Number, Null, Value, Expression
 from assnouncer.metaclass import Descriptor
 
@@ -33,6 +34,7 @@ class Help:
         for idx, parameter in enumerate(self.parameters):
             if parameter.name == key:
                 return idx
+        return None
 
     def validate_type(self, value: Value, type: str, default: Expression = None) -> bool:
         if value is None:
@@ -138,8 +140,8 @@ class Help:
 
 
 class BaseCommand(metaclass=Descriptor):
-    TYPE: Command = None
-    ALIASES: List[str] = None
+    TYPE: Command
+    ALIASES: List[str]
 
     def __init__(self, ass: Assnouncer, message: Message) -> None:
         self.ass: Assnouncer = ass
@@ -169,16 +171,18 @@ class BaseCommand(metaclass=Descriptor):
 
     @staticmethod
     def find_command(name: Identifier) -> Type[BaseCommand]:
-        for command_type in BaseCommand.get_instances():
+        for command_type in util.subclasses(BaseCommand):
             if command_type.accept(name):
                 return command_type
+        return None
 
     @staticmethod
     async def run(ass: Assnouncer, message: Message, expression: Expression):
         if isinstance(expression, Value):
             return expression
 
-        expression: Command = expression
+        if not isinstance(expression, Command):
+            raise TypeError("Cannot evaluate expression")
 
         name = await BaseCommand.run(ass, message, expression.callable)
         if not isinstance(name, Identifier):

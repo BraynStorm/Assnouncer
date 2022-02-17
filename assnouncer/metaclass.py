@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TypeVar, List
+from typing import TypeVar
 
-T = TypeVar("T")
+T = TypeVar("T", bound="Descriptor")
 
 
 class Descriptor(type):
@@ -14,19 +14,5 @@ class Descriptor(type):
 
         return cls
 
-    @classmethod
     def validate(cls):
         pass
-
-    def get_instances(cls: T) -> List[T]:
-        subclasses = []
-
-        queue = [cls]
-        while queue:
-            current_class = queue.pop()
-            for child in current_class.__subclasses__():
-                if child not in subclasses:
-                    subclasses.append(child)
-                    queue.append(child)
-
-        return subclasses

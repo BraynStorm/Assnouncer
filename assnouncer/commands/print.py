@@ -17,4 +17,4 @@ class Print(BaseCommand):
         """
         command = BaseCommand.parse(payload.value)
         result = await BaseCommand.run(self.ass, self.message, command)
-        self.respond(result.format())
+        self.respond(repr(result))

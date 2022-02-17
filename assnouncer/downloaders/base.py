@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 class BaseDownloader(metaclass=Descriptor):
-    PATTERNS: List[str] = None
+    PATTERNS: List[str]
 
     @classmethod
     def validate(cls):

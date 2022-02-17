@@ -7,10 +7,12 @@ from assnouncer.asspp import Timestamp, Number, Null
 from assnouncer.downloaders import BaseDownloader
 
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, TypeVar, Union
 from pytube import YouTube, Search
 from pathlib import Path
 from discord import FFmpegOpusAudio, Member
+
+T = TypeVar("T", bound="type")
 
 
 @dataclass
@@ -20,6 +22,20 @@ class SongRequest:
     uri: str
     start: Union[Timestamp, Number] = Null
     stop: Union[Timestamp, Number] = Null
+
+
+def subclasses(cls: T) -> List[T]:
+    subclasses = []
+
+    queue = [cls]
+    while queue:
+        current_class = queue.pop()
+        for child in current_class.__subclasses__():
+            if child not in subclasses:
+                subclasses.append(child)
+                queue.append(child)
+
+    return subclasses
 
 
 def get_theme_path(user: Member) -> Path:
@@ -50,9 +66,11 @@ def search_song(query: str) -> str:
     else:
         print(f"[warn] Not Youtube results for {repr(query)}")
 
+    return None
 
-def can_download(uri: str):
-    return any(d.accept(uri) for d in BaseDownloader.get_instances())
+
+def can_download(uri: str) -> bool:
+    return any(d.accept(uri) for d in subclasses(BaseDownloader))
 
 
 def resolve_uri(query: str) -> str:
@@ -103,7 +121,7 @@ async def download(
         else:
             return await load_song()
 
-    for downloader in BaseDownloader.get_instances():
+    for downloader in subclasses(BaseDownloader):
         if downloader.accept(uri):
             print(f"[info] Downloading via {downloader.__name__}")
             if downloader.download(uri, filename, start=start, stop=stop):
@@ -111,3 +129,5 @@ async def download(
                 return await load_song()
             else:
                 print("[warn] Download unsuccessful")
+
+    return None
