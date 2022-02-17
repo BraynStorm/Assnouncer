@@ -26,8 +26,8 @@ class SetTheme(BaseCommand):
         author = self.message.author
         request = await util.download(
             payload.value,
-            start=start.value,
-            stop=stop.value,
+            start=start,
+            stop=stop,
             filename=util.get_theme_path(author),
             force=True
         )

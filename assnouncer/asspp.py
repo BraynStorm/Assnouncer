@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import ast
+import math
 import regex
 
 from regex import VERSION1
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Tuple, Match, TypeVar, Type
+from typing import Dict, List, Tuple, Match, TypeVar, Type, Generic
 
 
 T = TypeVar("T")
+U = TypeVar("U")
 
 
 @dataclass
@@ -28,7 +30,7 @@ class TokenType(Enum):
     NUMBER = "-?\\d+(?:\\.\\d+)?"
     NULL = "null"
     IDENTIFIER = "\\w+"
-    STRING = "\"(?:[^\\\\\"]|(?:\\\\.))*\""
+    STRING = "(?P<q>(\"\"\"|\'\'\'|\"|\'))(?:\\\\.|[^\\\\])*?(?P=q)"
     BULLSHIT = "\\S+"
 
 
@@ -53,30 +55,72 @@ class Expression:
 
 
 @dataclass(eq=True, frozen=True)
-class Value(Expression):
+class Value(Expression, Generic[T]):
+    value: T
+
     @classmethod
-    def new(cls: Type[T], value) -> T:
+    def new(cls: Type[Value[T]], value: T) -> Value[T]:
         return cls(None, None, value)
 
     @classmethod
-    def parse(cls: Type[T], start: int, stop: int, text: str) -> T:
+    def parse(cls: Type[Value[T]], start: int, stop: int, text: str) -> Value[T]:
         pass
 
     def format(self) -> str:
         pass
 
+    def __round__(self: Value[T], ndigits: int = None) -> Value[T]:
+        return self.new(round(self.value, ndigits=ndigits))
+
+    def __floor__(self: Value[T]) -> Value[T]:
+        return self.new(math.floor(self.value))
+
+    def __ceil__(self: Value[T]) -> Value[T]:
+        return self.new(math.ceil(self.value))
+
+    def __add__(self: Value[T], other: Value[T]) -> Value[T]:
+        return self.new(self.value + other.value)
+
+    def __sub__(self: Value[T], other: Value[T]) -> Value[T]:
+        return self.new(self.value - other.value)
+
+    def __mul__(self: Value[T], other: Value[T]) -> Value[T]:
+        return self.new(self.value * other.value)
+
+    def __mod__(self: Value[T], other: Value[T]) -> Value[T]:
+        return self.new(self.value % other.value)
+
+    def __truediv__(self: Value[T], other: Value[T]) -> Value[T]:
+        return self.new(self.value // other.value)
+
+    def __lt__(self, other: Value[T]) -> bool:
+        return self.value < other.value
+
+    def __le__(self, other: Value[T]) -> bool:
+        return self.value <= other.value
+
+    def __eq__(self, other: Value[T]) -> bool:
+        return self.value == other.value
+
+    def __ne__(self, other: Value[T]) -> bool:
+        return self.value != other.value
+
+    def __ge__(self, other: Value[T]) -> bool:
+        return self.value >= other.value
+
+    def __gt__(self, other: Value[T]) -> bool:
+        return self.value > other.value
+
 
 @dataclass(eq=True, frozen=True)
-class Null(Value):
-    value: Type[None] = None
-
+class Null(Value[Type[None]]):
     @classmethod
     def parse(self, start: int, stop: int, _: str) -> Null:
         return Null(start=start, stop=stop, value=None)
 
     def format(self) -> str:
         return "null"
-    
+
     def __call__(self, start: int, stop: int, value: str) -> Null:
         return Null.__class__(start, stop, value)
 
@@ -88,9 +132,7 @@ Null = Null.new(None)
 
 
 @dataclass(eq=True, frozen=True)
-class Number(Value):
-    value: float
-
+class Number(Value[float]):
     @staticmethod
     def parse(start: int, stop: int, text: str) -> Number:
         return Number(start=start, stop=stop, value=float(text))
@@ -98,26 +140,9 @@ class Number(Value):
     def format(self) -> str:
         return str(self.value)
 
-    def __add__(self, other: Number) -> Number:
-        return Number.new(self.value + other.value)
-
-    def __sub__(self, other: Number) -> Number:
-        return Number.new(self.value - other.value)
-
-    def __mul__(self, other: Number) -> Number:
-        return Number.new(self.value * other.value)
-
-    def __mod__(self, other: Number) -> Number:
-        return Number.new(self.value % other.value)
-
-    def __truediv__(self, other: Number) -> Number:
-        return Number.new(self.value / other.value)
-
 
 @dataclass(eq=True, frozen=True)
-class Identifier(Value):
-    value: str
-
+class Identifier(Value[str]):
     @staticmethod
     def parse(start: int, stop: int, text: str) -> Identifier:
         return Identifier(start=start, stop=stop, value=text)
@@ -125,14 +150,9 @@ class Identifier(Value):
     def format(self) -> str:
         return self.value
 
-    def __add__(self, other: Identifier) -> Identifier:
-        return Identifier.new(self.value + other.value)
-
 
 @dataclass(eq=True, frozen=True)
-class String(Value):
-    value: str
-
+class String(Value[str]):
     @staticmethod
     def parse(start: int, stop: int, text: str, evaluate: bool = True) -> String:
         value = ast.literal_eval(text) if evaluate else text
@@ -141,27 +161,17 @@ class String(Value):
     def format(self) -> str:
         return repr(self.value)
 
-    def __add__(self, other: String) -> String:
-        return String.new(self.value + other.value)
-
 
 @dataclass(eq=True, frozen=True)
-class Timestamp(Value):
-    value: int
-    minutes: int
-    seconds: int
-
+class Timestamp(Value[int]):
     @staticmethod
     def parse(start: int, stop: int, text: str) -> Timestamp:
         minutes, seconds = text.split(":")
         minutes, seconds = int(minutes), int(seconds)
-
         return Timestamp(
             start=start,
             stop=stop,
-            value=minutes * 60 + seconds,
-            minutes=minutes,
-            seconds=seconds
+            value=minutes * 60 + seconds
         )
 
     def format(self) -> str:
@@ -289,7 +299,7 @@ def parse_primitive(tokens: List[Token]) -> Value:
         return map[first.type].parse(first.start, first.stop, first.text)
 
 
-def parse_kwarg(tokens: List[Token]) -> Tuple[str, Value]:
+def parse_kwarg(tokens: List[Token]) -> Tuple[Expression, Expression]:
     if not tokens:
         return None
 

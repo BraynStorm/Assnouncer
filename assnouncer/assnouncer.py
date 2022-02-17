@@ -4,8 +4,10 @@ import asyncio
 import time
 
 from assnouncer import util
-from assnouncer.commands.audio.player import AudioPlayer
+from assnouncer.audio import music
+from assnouncer.asspp import Null
 from assnouncer.util import SongRequest
+from assnouncer.audio.music import MusicState
 from assnouncer.commands import BaseCommand
 
 from dataclasses import dataclass, field
@@ -49,11 +51,23 @@ class Assnouncer(Client):
         return asyncio.run_coroutine_threadsafe(channel.send(message), self.loop)
 
     def song_loop(self):
-        player = AudioPlayer(self.voice)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        def wait(coro):
+            loop.run_until_complete(coro)
+
         while True:
-            request: SongRequest
+            # Set to None so the old request gets garbage collected
+            request: SongRequest = None
             with self.lock:
                 if not self.song_queue and not self.theme_queue:
+                    time.sleep(0.1)
+                    continue
+
+                voice = self.voice
+
+                if not voice.is_connected():
                     time.sleep(0.1)
                     continue
 
@@ -63,14 +77,14 @@ class Assnouncer(Client):
                     request = self.song_queue.pop(0)
 
             span = ""
-            if request.start is not None or request.stop is not None:
+            if request.start != Null or request.stop != Null:
                 start = ""
                 stop = ""
 
-                if request.start is not None:
+                if request.start != Null:
                     start = request.start.format()
 
-                if request.stop is not None:
+                if request.stop != Null:
                     stop = request.stop.format()
 
                 span = f"[{start}-{stop}]"
@@ -82,31 +96,33 @@ class Assnouncer(Client):
                     if self.event.is_set():
                         self.event.clear()
 
-                        player.source = None
-
-                        return True
+                        return MusicState.STOPPED
 
                     if not self.theme_queue:
-                        return False
+                        return MusicState.CONTINUED
 
                     request = self.theme_queue.pop(0)
 
-                    old_source = player.source
-                    player.source = request.source
+                    music.play(voice, request.source, callback=callback)
 
-                    player.run(callback=callback)
-
-                    player.source = old_source
-
-                    return True
-
-            player.source = request.source
+                    return MusicState.INTERRUPTED
 
             self.event.clear()
 
-            player.set_speaking(True)
-            player.run(callback=callback)
-            player.set_speaking(False)
+            wait(voice.ws.speak(True))
+            music.play(voice, request.source, callback=callback)
+            wait(voice.ws.speak(False))
+
+    async def ensure_connected(self):
+        with self.lock:
+            if self.voice is not None and self.voice.is_connected():
+                return
+
+            if self.voice is None:
+                vc = self.server.voice_channels[0]
+                self.voice = await vc.connect(timeout=2000, reconnect=True)
+            else:
+                await self.voice.connect(timeout=2000, reconnect=True)
 
     async def on_ready(self):
         print("[info] Getting ready")
@@ -114,7 +130,8 @@ class Assnouncer(Client):
 
         self.server = self.get_guild(642747343208185857)
         self.general = self.server.text_channels[0]
-        self.voice = await self.server.voice_channels[0].connect(timeout=2000, reconnect=True)
+
+        await self.ensure_connected()
 
         await self.set_activity("Ready")
 
@@ -122,8 +139,10 @@ class Assnouncer(Client):
 
         Thread(target=self.song_loop, daemon=True).start()
 
-    def queue_song(self, request: SongRequest):
+    async def queue_song(self, request: SongRequest):
         with self.lock:
+            await self.ensure_connected()
+
             self.song_queue.append(request)
 
     async def play_theme(self, user: Member):
@@ -140,6 +159,8 @@ class Assnouncer(Client):
                 query=f"{user}'s theme",
                 uri=f"{user}'s theme"
             )
+
+            await self.ensure_connected()
 
             self.theme_queue.append(request)
 
@@ -173,9 +194,7 @@ class Assnouncer(Client):
             command = BaseCommand.parse(message.content)
             print(f"[info] Trying to run '{command}'")
             await BaseCommand.run(self, message, command)
-        except SyntaxError as e:
-            print(f"[warn] {e}")
-        except TypeError as e:
+        except (SyntaxError, TypeError) as e:
             print(f"[warn] {e}")
 
 

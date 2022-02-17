@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 
 from assnouncer.config import THEMES_DIR, FFMPEG_PATH, DOWNLOAD_DIR
-from assnouncer.asspp import Timestamp, Number
+from assnouncer.asspp import Timestamp, Number, Null
 from assnouncer.downloaders import BaseDownloader
 
 from dataclasses import dataclass
@@ -18,8 +18,8 @@ class SongRequest:
     source: FFmpegOpusAudio
     query: str
     uri: str
-    start: Union[Timestamp, Number] = None
-    stop: Union[Timestamp, Number] = None
+    start: Union[Timestamp, Number] = Null
+    stop: Union[Timestamp, Number] = Null
 
 
 def get_theme_path(user: Member) -> Path:
@@ -28,17 +28,15 @@ def get_theme_path(user: Member) -> Path:
 
 def get_download_path(
     uri: str,
-    start: Union[Timestamp, Number] = None,
-    stop: Union[Timestamp, Number] = None,
+    start: Union[Timestamp, Number] = Null,
+    stop: Union[Timestamp, Number] = Null,
 ) -> Path:
-    if start is not None:
-        start = int(start.value)
+    if start != Null:
+        start = round(start)
 
-    if stop is not None:
-        stop = int(stop.value)
+    if stop != Null:
+        stop = round(stop)
 
-    # NOTE(daniel):
-    #  Using Timestamp.value ensures that "0:0" is the same as "00:00"
     hash_string = f"[{start}-{stop}] {uri}"
     hash_value = hashlib.md5(hash_string.encode("utf8")).hexdigest()
     return (DOWNLOAD_DIR / hash_value).with_suffix(".opus")
@@ -50,7 +48,7 @@ def search_song(query: str) -> str:
     if results:
         return results[0].watch_url
     else:
-        print(f"[warn] No Youtube results for {repr(query)}")
+        print(f"[warn] Not Youtube results for {repr(query)}")
 
 
 def can_download(uri: str):
@@ -76,8 +74,8 @@ async def load_source(uri: Path) -> FFmpegOpusAudio:
 
 async def download(
     query: str,
-    start: Union[Timestamp, Number] = None,
-    stop: Union[Timestamp, Number] = None,
+    start: Union[Timestamp, Number] = Null,
+    stop: Union[Timestamp, Number] = Null,
     filename: Path = None,
     force: bool = False
 ) -> SongRequest:
@@ -99,8 +97,11 @@ async def download(
             stop=stop
         )
 
-    if filename.is_file() and not force:
-        return await load_song()
+    if filename.is_file():
+        if force:
+            filename.unlink()
+        else:
+            return await load_song()
 
     for downloader in BaseDownloader.get_instances():
         if downloader.accept(uri):

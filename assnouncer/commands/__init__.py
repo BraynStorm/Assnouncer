@@ -4,6 +4,8 @@ import assnouncer.commands.ass
 import assnouncer.commands.parse
 import assnouncer.commands.print
 import assnouncer.commands.help
+import assnouncer.commands.search
+import assnouncer.commands.download
 import assnouncer.commands.play
 import assnouncer.commands.queue
 import assnouncer.commands.stop

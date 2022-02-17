@@ -21,8 +21,8 @@ class Dumb(BaseCommand):
         :param howdumb: (Optional) How dumb said entity is.
         """
         if howdumb != Null:
-            msg = f"{who.value} is {howdumb.value} dumb"
+            msg = f"{who} is {howdumb} dumb"
         else:
-            msg = f"{who.value} is dumb"
+            msg = f"{who} is dumb"
 
         self.respond(msg)

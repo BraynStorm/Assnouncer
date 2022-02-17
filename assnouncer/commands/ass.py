@@ -23,15 +23,9 @@ class Ass(BaseCommand):
 
             if result != Null:
                 self.respond(f"Command result: {result}")
-        except SyntaxError as e:
+        except (SyntaxError, TypeError) as e:
             message = (
-                f"Could not parse command:\n"
-                f"    {e}"
-            )
-            self.respond(f"```{message}```")
-        except TypeError as e:
-            message = (
-                f"Invalid command arguments:\n"
-                f"    {e}"
+                f"Could not run command:\n"
+                f"    {e.__class__.__name__}: {e}"
             )
             self.respond(f"```{message}```")
