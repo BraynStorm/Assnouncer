@@ -166,6 +166,18 @@ class BaseCommand(metaclass=Descriptor):
     def parse(content: str) -> Command:
         return asspp.parse(content)
 
+    @staticmethod
+    def can_run(content: str) -> bool:
+        try:
+            command = BaseCommand.parse(content)
+            if not isinstance(command.callable, Identifier):
+                return False
+
+            command_type = BaseCommand.find_command(command.callable)
+            return command_type is not None
+        except (SyntaxError, TypeError) as e:
+            return False
+
     @classmethod
     def accept(cls, name: Identifier) -> bool:
         return name.value in cls.ALIASES

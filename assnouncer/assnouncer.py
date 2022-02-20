@@ -187,16 +187,31 @@ class Assnouncer(Client):
         if message.author == self.user:
             return
 
-        if "\n" in message.content:
+        # TODO: Move this to asspp.parse or BaseCommand
+
+        content: str = message.content
+        lines: List[str] = [content]
+        if content.startswith("```") and content.endswith("```"):
+            content = content[3:-3]
+
+            lines = [line for line in content.splitlines() if line.strip()]
+            for idx, line in enumerate(lines):
+                if not BaseCommand.can_run(line):
+                    print(f"[warn] Cannot run command #{idx}: {line}")
+                    return
+
+        elif "\n" in content:
             return
 
         print(f"[info] Parsing: {message.content!r}")
-        try:
-            command = BaseCommand.parse(message.content)
-            print(f"[info] Trying to run '{command}'")
-            await BaseCommand.run(self, message, command)
-        except (SyntaxError, TypeError) as e:
-            print(f"[warn] {e}")
+
+        for idx, line in enumerate(lines):
+            try:
+                command = BaseCommand.parse(line)
+                print(f"[info] Trying to run '{command}'")
+                await BaseCommand.run(self, message, command)
+            except (SyntaxError, TypeError) as e:
+                print(f"[warn] Command #{idx}: {e}")
 
 
 if __name__ == "__main__":

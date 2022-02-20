@@ -389,6 +389,9 @@ def parse_expression(tokens: List[Token]) -> Expression:
 
 
 def parse(text: str) -> Command:
+    if text.startswith("`") and text.endswith("`"):
+        text = text[1:-1]
+
     tokens = tokenize(text)
 
     if not tokens:
@@ -414,11 +417,22 @@ def parse(text: str) -> Command:
             arguments=arguments
         )
 
-    payload = text[stop:].strip()
+    payload = text[stop:]
+    payload_length = len(payload)
+
+    payload = payload.lstrip()
+    start = stop + payload_length - len(payload)
+
+    payload = payload.rstrip()
+    stop = start + len(payload)
+
+    if payload.startswith("`") and payload.endswith("`"):
+        payload = payload[1:-1]
+
     if payload:
         callable.arguments.kwargs.append((
-            Identifier.parse(stop, stop, "payload"),
-            String.parse(stop, len(text), payload, evaluate=False)
+            Identifier.parse(start, start, "payload"),
+            String.parse(start, stop, payload, evaluate=False)
         ))
 
     return callable
