@@ -3,13 +3,12 @@ from __future__ import annotations
 import inspect
 
 from assnouncer import asspp
-
 from assnouncer import util
 from assnouncer.asspp import Command, Timestamp, String, Identifier, Number, Null, Value, Expression
 from assnouncer.metaclass import Descriptor
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar, List, Tuple, Type, TypeVar
 from discord import Message, TextChannel
 
 if TYPE_CHECKING:
@@ -139,14 +138,16 @@ class Help:
         return self.index(key) is not None
 
 
+@dataclass
 class BaseCommand(metaclass=Descriptor):
-    TYPE: Command
-    ALIASES: List[str]
+    ALIASES: ClassVar[List[str]]
 
-    def __init__(self, ass: Assnouncer, message: Message) -> None:
-        self.ass: Assnouncer = ass
-        self.message: Message = message
-        self.channel: TextChannel = message.channel
+    ass: Assnouncer
+    message: Message
+    channel: TextChannel = None
+
+    def __post_init__(self):
+        self.channel = self.message.channel
 
     def respond(self, message: str):
         self.ass.message(message, channel=self.channel)
@@ -211,7 +212,7 @@ class BaseCommand(metaclass=Descriptor):
 
         help.validate(args, kwargs)
 
-        instance = command_type(ass, message)
+        instance = command_type(ass=ass, message=message)
         result = await instance.on_command(*args, **{k.value: v for k, v in kwargs})
         if result is None:
             result = Null

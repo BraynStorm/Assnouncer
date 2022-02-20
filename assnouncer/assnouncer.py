@@ -22,7 +22,7 @@ from discord import (
 
 @dataclass
 class Assnouncer(Client):
-    event: Event = field(default_factory=Event)
+    skip_event: Event = field(default_factory=Event)
     lock: RLock = field(default_factory=RLock)
     song_queue: List[SongRequest] = field(default_factory=list)
     theme_queue: List[SongRequest] = field(default_factory=list)
@@ -34,7 +34,7 @@ class Assnouncer(Client):
         super().__init__()
 
     def skip(self):
-        self.event.set()
+        self.skip_event.set()
 
     def stop(self):
         with self.lock:
@@ -58,8 +58,6 @@ class Assnouncer(Client):
             loop.run_until_complete(coro)
 
         while True:
-            # Set to None so the old request gets garbage collected
-            request: SongRequest = None
             with self.lock:
                 if not self.song_queue and not self.theme_queue:
                     time.sleep(0.1)
@@ -93,8 +91,8 @@ class Assnouncer(Client):
 
             def callback() -> bool:
                 with self.lock:
-                    if self.event.is_set():
-                        self.event.clear()
+                    if self.skip_event.is_set():
+                        self.skip_event.clear()
 
                         return MusicState.STOPPED
 
@@ -107,11 +105,14 @@ class Assnouncer(Client):
 
                     return MusicState.INTERRUPTED
 
-            self.event.clear()
+            self.skip_event.clear()
 
             wait(voice.ws.speak(True))
             music.play(voice, request.source, callback=callback)
             wait(voice.ws.speak(False))
+
+            # Make sure request gets garbage collected as soon as possible
+            del request
 
     async def ensure_connected(self):
         with self.lock:
