@@ -170,6 +170,15 @@ class Timestamp(Value[int]):
     def __repr__(self) -> str:
         return f"{self.value // 60:02.0f}:{self.value % 60:02.0f}"
 
+    def __round__(self: Timestamp, ndigits: int = None) -> Timestamp:
+        return self.new(round(self.value, ndigits=ndigits))
+
+    def __floor__(self: Timestamp) -> Timestamp:
+        return self.new(math.floor(self.value))
+
+    def __ceil__(self: Timestamp) -> Timestamp:
+        return self.new(math.ceil(self.value))
+
     def __add__(self: Timestamp, other: Timestamp) -> Timestamp:
         return self.new(self.value + other.value)
 
@@ -427,7 +436,7 @@ def parse(text: str) -> Command:
     stop = start + len(payload)
 
     if payload.startswith("`") and payload.endswith("`"):
-        payload = payload[1:-1]
+        payload = payload[1:-1].strip()
 
     if payload:
         callable.arguments.kwargs.append((

@@ -13,6 +13,7 @@ from pathlib import Path
 class FallbackDownloader(BaseDownloader):
     PATTERNS: List[str] = [
         r"https://youtu.be/.*",
+        r"https://cdn\.discordapp\.com/attachments/[0-9]+/[0-9]+/.*\.(wav|mp3|opus|ogg|m4a)",
         r"https://(www\.)?youtube\.com/watch\?v=.*",
         r"https://(www\.)?soundcloud\.com/.*",
         # TODO(daniel): Dailymotion download takes ages
