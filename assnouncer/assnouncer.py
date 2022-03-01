@@ -213,7 +213,3 @@ class Assnouncer(Client):
             except (SyntaxError, TypeError) as e:
                 print(f"[warn] Command #{idx}: {e}")
 
-
-if __name__ == "__main__":
-    ass = Assnouncer()
-    ass.run(Path("token").read_text())
