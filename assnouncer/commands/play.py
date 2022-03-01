@@ -8,7 +8,7 @@ from typing import List, Union
 
 
 class Play(BaseCommand):
-    ALIASES: List[str] = ["play", "плаъ", "playing"]
+    ALIASES: List[str] = ["play", "плаъ", "πλαυ", "playing"]
 
     async def on_command(
         self,
