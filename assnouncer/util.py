@@ -24,6 +24,7 @@ class SongRequest:
     uri: str
     start: Union[Timestamp, Number] = Null
     stop: Union[Timestamp, Number] = Null
+    sneaky: bool = False
 
 
 def subclasses(cls: T) -> List[T]:
@@ -97,6 +98,7 @@ async def download(
     start: Union[Timestamp, Number] = Null,
     stop: Union[Timestamp, Number] = Null,
     download_path: Path = None,
+    sneaky: bool = False,
     force: bool = False
 ) -> SongRequest:
     uri = resolve_uri(query)
@@ -119,7 +121,8 @@ async def download(
             query=query,
             uri=uri,
             start=start,
-            stop=stop
+            stop=stop,
+            sneaky=sneaky
         )
 
     if download_path.is_file():
