@@ -87,7 +87,8 @@ class Assnouncer(Client):
 
                 span = f"[{start}-{stop}]"
 
-            self.message(f"Now playing \\` {request.uri} \\` {span}")
+            if not request.sneaky:
+                self.message(f"Now playing \\` {request.uri} \\` {span}")
 
             def callback() -> bool:
                 with self.lock:
