@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from typing import List, Tuple
 
 from assnouncer.util import SongRequest
 
@@ -14,7 +14,8 @@ class Queue(BaseCommand):
         """
         Print all songs in the queue.
         """
-        def stringify(idx: int, song: SongRequest) -> str:
+        def stringify(fuck_you: Tuple[int, SongRequest]) -> str:
+            idx, song = fuck_you
             if song.uri == song.query:
                 return f"{idx}: {song.uri}"
             return f"{idx}: {song.uri} ({song.query})"
