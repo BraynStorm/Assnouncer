@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from tempfile import TemporaryDirectory
 
 from assnouncer.config import THEMES_DIR, FFMPEG_PATH, DOWNLOAD_DIR
 from assnouncer.asspp import Timestamp, Number, Null
@@ -17,6 +18,7 @@ T = TypeVar("T", bound="type")
 
 @dataclass
 class SongRequest:
+    where: TemporaryDirectory
     source: FFmpegOpusAudio
     query: str
     uri: str
@@ -94,7 +96,7 @@ async def download(
     query: str,
     start: Union[Timestamp, Number] = Null,
     stop: Union[Timestamp, Number] = Null,
-    filename: Path = None,
+    download_path: Path = None,
     force: bool = False
 ) -> SongRequest:
     uri = resolve_uri(query)
@@ -102,12 +104,17 @@ async def download(
         print("[warn] Requested song could not be found or is not supported")
         return None
 
-    if filename is None:
-        filename = get_download_path(uri, start=start, stop=stop)
+    where = TemporaryDirectory()
+
+    if download_path is None:
+        download_path = get_download_path(uri, start=start, stop=stop)
 
     async def load_song() -> SongRequest:
-        source = await load_source(filename)
+        load_path = Path(where.name) / "bingchillin.opus"
+        load_path.write_bytes(download_path.read_bytes())
+        source = await load_source(load_path)
         return SongRequest(
+            where=where,
             source=source,
             query=query,
             uri=uri,
@@ -115,16 +122,16 @@ async def download(
             stop=stop
         )
 
-    if filename.is_file():
+    if download_path.is_file():
         if force:
-            filename.unlink()
+            download_path.unlink()
         else:
             return await load_song()
 
     for downloader in subclasses(BaseDownloader):
         if downloader.accept(uri):
             print(f"[info] Downloading via {downloader.__name__}")
-            if downloader.download(uri, filename, start=start, stop=stop):
+            if downloader.download(uri, download_path, start=start, stop=stop):
                 print("[info] Download successful")
                 return await load_song()
             else:

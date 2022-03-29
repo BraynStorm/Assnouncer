@@ -28,7 +28,7 @@ class SetTheme(BaseCommand):
             payload.value,
             start=start,
             stop=stop,
-            filename=util.get_theme_path(author),
+            download_path=util.get_theme_path(author),
             force=True
         )
         if request is not None:
