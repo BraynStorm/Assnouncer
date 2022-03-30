@@ -1,25 +1,24 @@
 from __future__ import annotations
 
 import hashlib
-from tempfile import TemporaryDirectory
 
-from assnouncer.config import THEMES_DIR, FFMPEG_PATH, DOWNLOAD_DIR
+from assnouncer.config import THEMES_DIR, DOWNLOAD_DIR
 from assnouncer.asspp import Timestamp, Number, Null
 from assnouncer.downloaders import BaseDownloader
+from assnouncer.audio.music import AudioSource
 
 from dataclasses import dataclass
 from typing import List, TypeVar, Union
 from pytube import YouTube, Search
 from pathlib import Path
-from discord import FFmpegOpusAudio, Member
+from discord import Member
 
 T = TypeVar("T", bound="type")
 
 
 @dataclass
 class SongRequest:
-    where: TemporaryDirectory
-    source: FFmpegOpusAudio
+    source: AudioSource
     query: str
     uri: str
     start: Union[Timestamp, Number] = Null
@@ -83,21 +82,18 @@ def resolve_uri(query: str) -> str:
         return search_song(query)
 
 
-async def load_source(uri: Path) -> FFmpegOpusAudio:
+async def load_source(uri: Path) -> AudioSource:
     if not uri.is_file():
         return None
 
-    return await FFmpegOpusAudio.from_probe(
-        source=str(uri),
-        executable=str(FFMPEG_PATH)
-    )
+    return await AudioSource.from_probe(uri)
 
 
 async def download(
     query: str,
     start: Union[Timestamp, Number] = Null,
     stop: Union[Timestamp, Number] = Null,
-    download_path: Path = None,
+    filename: Path = None,
     sneaky: bool = False,
     force: bool = False
 ) -> SongRequest:
@@ -106,17 +102,12 @@ async def download(
         print("[warn] Requested song could not be found or is not supported")
         return None
 
-    where = TemporaryDirectory()
-
-    if download_path is None:
-        download_path = get_download_path(uri, start=start, stop=stop)
+    if filename is None:
+        filename = get_download_path(uri, start=start, stop=stop)
 
     async def load_song() -> SongRequest:
-        load_path = Path(where.name) / "bingchillin.opus"
-        load_path.write_bytes(download_path.read_bytes())
-        source = await load_source(load_path)
+        source = await load_source(filename)
         return SongRequest(
-            where=where,
             source=source,
             query=query,
             uri=uri,
@@ -125,16 +116,16 @@ async def download(
             sneaky=sneaky
         )
 
-    if download_path.is_file():
+    if filename.is_file():
         if force:
-            download_path.unlink()
+            filename.unlink()
         else:
             return await load_song()
 
     for downloader in subclasses(BaseDownloader):
         if downloader.accept(uri):
             print(f"[info] Downloading via {downloader.__name__}")
-            if downloader.download(uri, download_path, start=start, stop=stop):
+            if downloader.download(uri, filename, start=start, stop=stop):
                 print("[info] Download successful")
                 return await load_song()
             else:
