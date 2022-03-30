@@ -1,11 +1,13 @@
 from __future__ import annotations
-import asyncio
 
 import time
 
-from dataclasses import dataclass
-from typing import Callable
+from assnouncer.config import FFMPEG_PATH
+
+from typing import Callable, Union
 from enum import IntEnum
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from discord.opus import Encoder
 from discord import FFmpegOpusAudio, VoiceClient
 
@@ -18,9 +20,31 @@ class MusicState(IntEnum):
     CONTINUED = 2
 
 
+class AudioSource(FFmpegOpusAudio):
+    where: TemporaryDirectory
+
+    def __init__(self, source: str, *, where: TemporaryDirectory, **kwargs):
+        super().__init__(source, **kwargs)
+
+        self.where = where
+
+    @classmethod
+    async def from_probe(cls, source_path: Path, **kwargs):
+        where = TemporaryDirectory()
+        load_path = Path(where.name) / "bingchillin.opus"
+        load_path.write_bytes(source_path.read_bytes())
+
+        return await super().from_probe(
+            source=str(load_path),
+            executable=str(FFMPEG_PATH),
+            where=where,
+            **kwargs
+        )
+
+
 def play(
     client: VoiceClient,
-    source: FFmpegOpusAudio,
+    source: AudioSource,
     callback: Callable[[], MusicState] = None
 ):
     if not client._connected.is_set():

@@ -13,7 +13,6 @@ from assnouncer.commands import BaseCommand
 from dataclasses import dataclass, field
 from typing import List
 from threading import RLock, Event, Thread
-from pathlib import Path
 from discord import (
     Client, Game, TextChannel, Message,
     Guild, VoiceClient, Member, VoiceState
