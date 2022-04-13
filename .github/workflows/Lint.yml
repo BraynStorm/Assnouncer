@@ -33,9 +33,10 @@ jobs:
           fi
 
       - name: Run linters
-        uses: daniel-atanasov/lint-action@feature/suggested-change
+        uses: daniel-atanasov/lint-action@feature/auto-commit
         with:
-          auto_fix: false
+          auto_fix: true
+          auto_commit: false
           mypy: false
           mypy_args: >
             --follow-imports=silent
@@ -45,3 +46,8 @@ jobs:
           autopep8: true
           autopep8_args: >
             --max-line-length 120
+
+      - name: suggester / lint
+        uses: reviewdog/action-suggester@v1
+        with:
+          tool_name: lint
