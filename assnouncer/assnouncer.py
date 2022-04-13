@@ -194,10 +194,9 @@ class Assnouncer(Client):
         if content.startswith("```") and content.endswith("```"):
             content = content[3:-3]
 
-            lines = [line     for line in content.splitlines() if line.strip()]
-            for idx, line                in enumerate(lines):
-                if not BaseCommand.can_run  \
-                (line):
+            lines = [line for line in content.splitlines() if line.strip()]
+            for idx, line in enumerate(lines):
+                if not BaseCommand.can_run(line):
                     print(f"[warn] Cannot run command #{idx}: {line}")
                     return
 
@@ -209,9 +208,6 @@ class Assnouncer(Client):
         for idx, line in enumerate(lines):
             try:
 
-
-
-                
                 command = BaseCommand.parse(line)
                 print(f"[info] Trying to run '{command}'")
                 await BaseCommand.run(self, message, command)
