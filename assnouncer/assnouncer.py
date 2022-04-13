@@ -212,4 +212,3 @@ class Assnouncer(Client):
                 await BaseCommand.run(self, message, command)
             except (SyntaxError, TypeError) as e:
                 print(f"[warn] Command #{idx}: {e}")
-

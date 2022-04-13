@@ -15,22 +15,33 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v3
         with:
           python-version: 3.8
+          cache: pip
 
-      - name: Install Python dependencies
-        run: pip install mypy
+      - name: Install Action dependencies
+        run: pip install mypy autopep8
+
+      - name: Install Project dependencies
+        run: >
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
 
       - name: Run linters
-        uses: wearerequired/lint-action@v1
+        uses: wearerequired/lint-action@master
         with:
+          auto_fix: true
           mypy: true
           mypy_args: >
             --follow-imports=silent
             --ignore-missing-imports
             --implicit-optional
             --no-strict-optional
+          autopep8: true
+          autopep8_args: >
+            --max-line-length 120
