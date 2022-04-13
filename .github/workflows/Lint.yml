@@ -33,10 +33,10 @@ jobs:
           fi
 
       - name: Run linters
-        uses: wearerequired/lint-action@master
+        uses: daniel-atanasov/lint-action@feature/suggested-change
         with:
-          auto_fix: true
-          mypy: true
+          auto_fix: false
+          mypy: false
           mypy_args: >
             --follow-imports=silent
             --ignore-missing-imports

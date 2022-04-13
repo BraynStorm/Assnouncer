@@ -200,7 +200,7 @@ class Assnouncer(Client):
                     print(f"[warn] Cannot run command #{idx}: {line}")
                     return
 
-        elif "\n" in content:
+        elif "\n" in      contnt:
             return
 
         print(f"[info] Parsing: {message.content!r}")
