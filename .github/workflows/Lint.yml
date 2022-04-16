@@ -36,6 +36,7 @@ jobs:
         uses: wearerequired/lint-action@master
         with:
           auto_fix: true
+          commit: false
           mypy: true
           mypy_args: >
             --follow-imports=silent
@@ -45,3 +46,7 @@ jobs:
           autopep8: true
           autopep8_args: >
             --max-line-length 120
+      - name: Reviewdog
+        uses: reviewdog/action-suggester@v1
+        with:
+          tool_name: Autopep8
