@@ -45,7 +45,8 @@ class Assnouncer(Client):
 
     def message(self, message: str, channel: TextChannel = None):
         if channel is None:
-            channel = self.general
+            with self.lock:
+                channel = self.general
 
         return asyncio.run_coroutine_threadsafe(channel.send(message), self.loop)
 
@@ -119,18 +120,21 @@ class Assnouncer(Client):
             if self.voice is not None and self.voice.is_connected():
                 return
 
-            if self.voice is None:
-                vc = self.server.voice_channels[0]
-                self.voice = await vc.connect(timeout=2000, reconnect=True)
-            else:
-                await self.voice.connect(timeout=2000, reconnect=True)
+            if self.voice is not None:
+                try:
+                    return await self.voice.connect(timeout=2000, reconnect=True)
+                except TimeoutError:
+                    pass
+
+            self.server = self.get_guild(642747343208185857)
+            self.general = self.server.text_channels[0]
+
+            vc = self.server.voice_channels[0]
+            self.voice = await vc.connect(timeout=2000, reconnect=True)
 
     async def on_ready(self):
         print("[info] Getting ready")
         await self.set_activity("Getting ready")
-
-        self.server = self.get_guild(642747343208185857)
-        self.general = self.server.text_channels[0]
 
         await self.ensure_connected()
 
