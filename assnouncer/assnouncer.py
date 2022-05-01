@@ -28,6 +28,7 @@ class Assnouncer(Client):
     server: Guild = None
     general: TextChannel = None
     voice: VoiceClient = None
+    thread: Thread = None
 
     def __post_init__(self):
         super().__init__()
@@ -121,10 +122,8 @@ class Assnouncer(Client):
                 return
 
             if self.voice is not None:
-                try:
-                    return await self.voice.connect(timeout=2000, reconnect=True)
-                except TimeoutError:
-                    pass
+                print("[info] Trying to reconnect to voice")
+                await self.voice.disconnect()
 
             self.server = self.get_guild(642747343208185857)
             self.general = self.server.text_channels[0]
@@ -142,7 +141,11 @@ class Assnouncer(Client):
 
         print("[info] Ready")
 
-        Thread(target=self.song_loop, daemon=True).start()
+        if self.thread is None:
+            self.thread = Thread(target=self.song_loop, daemon=True)
+
+        if not self.thread.is_alive():
+            self.thread.start()
 
     async def queue_song(self, request: SongRequest):
         with self.lock:
