@@ -44,11 +44,7 @@ def get_theme_path(user: Member) -> Path:
     return (THEMES_DIR / f"{user.name}#{user.discriminator}").with_suffix(".opus")
 
 
-def get_download_path(
-    uri: str,
-    start: Timestamp = None,
-    stop: Timestamp = None,
-) -> Path:
+def get_download_path(uri: str, start: Timestamp = None, stop: Timestamp = None) -> Path:
     hash_string = f"[{start}-{stop}] {uri}"
     hash_value = hashlib.md5(hash_string.encode("utf8")).hexdigest()
     return (DOWNLOAD_DIR / hash_value).with_suffix(".opus")

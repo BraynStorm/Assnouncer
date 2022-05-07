@@ -9,6 +9,7 @@ from assnouncer.metaclass import Descriptor
 from typing import List, ClassVar
 from pathlib import Path
 
+
 @dataclass
 class BaseDownloader(metaclass=Descriptor):
     PATTERNS: ClassVar[List[str]] = []
