@@ -1,21 +1,16 @@
 from __future__ import annotations
 
 from assnouncer import util
-from assnouncer.asspp import String, Timestamp, Number, Null
+from assnouncer.asspp import String, Timestamp
 from assnouncer.commands.base import BaseCommand
 
-from typing import List, Union
+from typing import List, ClassVar
 
 
 class Play(BaseCommand):
-    ALIASES: List[str] = ["play", "плаъ", "πλαυ", "playing"]
+    ALIASES: ClassVar[List[str]] = ["play", "плаъ", "πλαυ", "playing"]
 
-    async def on_command(
-        self,
-        payload: String,
-        start: Union[Timestamp, Number] = Null,
-        stop: Union[Timestamp, Number] = Null
-    ):
+    async def on_command(self, payload: String, start: Timestamp = None, stop: Timestamp = None):
         """
         Add a song to Assnouncer's queue.
 

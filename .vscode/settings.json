@@ -6,7 +6,5 @@
         "--ignore-missing-imports",
         "--show-column-numbers",
         "--no-pretty",
-        "--implicit-optional",
-        "--no-strict-optional"
     ]
 }

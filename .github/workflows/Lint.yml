@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: 3.8
+          python-version: 3.10
           cache: pip
 
       - name: Install Action dependencies
@@ -38,12 +38,9 @@ jobs:
           auto_fix: true
           commit: false
           mypy: true
-          mypy_args: >
-            --follow-imports=silent
-            --ignore-missing-imports
-            --implicit-optional
-            --no-strict-optional
+          mypy_auto_fix: false
           autopep8: true
+          autopep8_auto_fix: true
           autopep8_args: >
             --max-line-length 120
       - name: Reviewdog

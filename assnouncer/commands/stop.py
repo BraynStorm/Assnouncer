@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from typing import List, ClassVar
 
 
 class Stop(BaseCommand):
-    ALIASES: List[str] = ["stop", "dilyankata", ]
+    ALIASES: ClassVar[List[str]] = ["stop", "dilyankata", ]
 
     async def on_command(self):
         """

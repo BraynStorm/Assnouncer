@@ -3,15 +3,17 @@ from __future__ import annotations
 import subprocess
 
 from assnouncer.config import FFMPEG_DIR
-from assnouncer.asspp import Null, Number, Timestamp
+from assnouncer.asspp import Timestamp
 from assnouncer.downloaders.base import BaseDownloader
 
-from typing import List, Union
+from dataclasses import dataclass
+from typing import List, ClassVar
 from pathlib import Path
 
 
+@dataclass
 class FallbackDownloader(BaseDownloader):
-    PATTERNS: List[str] = [
+    PATTERNS: ClassVar[List[str]] = [
         r"https://youtu.be/.*",
         r"https://cdn\.discordapp\.com/attachments/[0-9]+/[0-9]+/.*\.(wav|mp3|opus|ogg|m4a)",
         r"https://(www\.)?youtube\.com/watch\?v=.*",
@@ -22,12 +24,7 @@ class FallbackDownloader(BaseDownloader):
     ]
 
     @staticmethod
-    def download(
-        url: str,
-        filename: Path,
-        start: Union[Timestamp, Number] = Null,
-        stop: Union[Timestamp, Number] = Null
-    ) -> bool:
+    def download(url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
         filename_ns = filename.with_suffix("")
 
         cmd = (

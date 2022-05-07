@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from assnouncer.asspp import Null, String
+from assnouncer.asspp import String
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from typing import List, ClassVar
 
 
 class Ass(BaseCommand):
-    ALIASES: List[str] = ["ass"]
+    ALIASES: ClassVar[List[str]] = ["ass"]
 
     async def on_command(self, payload: String):
         """
@@ -21,7 +21,7 @@ class Ass(BaseCommand):
             command = BaseCommand.parse(payload.value)
             result = await BaseCommand.run(self.ass, self.message, command)
 
-            if result != Null:
+            if result is not None:
                 self.respond(f"Command result: {result}")
         except (SyntaxError, TypeError) as e:
             message = (

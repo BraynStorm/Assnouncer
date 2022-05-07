@@ -4,11 +4,11 @@ import inspect
 
 from assnouncer import asspp
 from assnouncer import util
-from assnouncer.asspp import Command, Timestamp, String, Identifier, Number, Null, Value, Expression
+from assnouncer.asspp import Command, Null, Timestamp, String, Identifier, Number, Value, Expression
 from assnouncer.metaclass import Descriptor
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, List, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, List, Tuple, Type
 from discord import Message, TextChannel
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class Help:
 
         return isinstance(value, type_map[type])
 
-    def validate(self, args: List[Value], kwargs: List[Tuple[Expression, Expression]]):
+    def validate(self, args: List[Value], kwargs: List[Tuple[Value, Value]]):
         if len(args) > len(self.parameters):
             raise TypeError(
                 f"Too many arguments given: "
@@ -81,7 +81,7 @@ class Help:
             if not isinstance(key, Identifier):
                 raise TypeError(
                     f"Invalid type for key: "
-                    f"Expected Identifier, got {key.__class.__name__}"
+                    f"Expected Identifier, got {key.__class__.__name__}"
                 )
 
             idx = self.index(key.value)
@@ -142,6 +142,8 @@ class Help:
 class BaseCommand(metaclass=Descriptor):
     ALIASES: ClassVar[List[str]]
 
+    on_command: ClassVar[Any]
+
     ass: Assnouncer
     message: Message
     channel: TextChannel = None
@@ -190,7 +192,10 @@ class BaseCommand(metaclass=Descriptor):
         return None
 
     @staticmethod
-    async def run(ass: Assnouncer, message: Message, expression: Expression):
+    async def run(ass: Assnouncer, message: Message, expression: Expression) -> Value:
+        if isinstance(expression, Null):
+            return None
+
         if isinstance(expression, Value):
             return expression
 
@@ -203,7 +208,7 @@ class BaseCommand(metaclass=Descriptor):
 
         command_type = BaseCommand.find_command(name)
         if command_type is None:
-            return Null
+            return None
 
         print(f"[info] Running {command_type.__name__}")
 
@@ -214,23 +219,24 @@ class BaseCommand(metaclass=Descriptor):
 
         help = command_type.analyze()
 
-        for idx, arg in enumerate(args):
-            args[idx] = await BaseCommand.run(ass, message, arg)
+        evaluated_args: List[Value] = []
+        for arg in args:
+            arg = await BaseCommand.run(ass, message, arg)
+            evaluated_args.append(arg)
 
-        for idx, (key, value) in enumerate(kwargs):
+        evaluated_kwargs: List[Tuple[Value, Value]] = []
+        for key, value in kwargs:
             key = await BaseCommand.run(ass, message, key)
             value = await BaseCommand.run(ass, message, value)
-            kwargs[idx] = key, value
+            evaluated_kwargs.append((key, value))
 
-        help.validate(args, kwargs)
+        help.validate(evaluated_args, evaluated_kwargs)
 
         instance = command_type(ass=ass, message=message)
-        result = await instance.on_command(*args, **{k.value: v for k, v in kwargs})
-        if result is None:
-            result = Null
+        result = await instance.on_command(*evaluated_args, **{k.value: v for k, v in evaluated_kwargs})
 
-        if not isinstance(result, Expression):
-            raise TypeError("Commands must return wrapped values")
+        if result is not None and not isinstance(result, Value):
+            raise TypeError("Commands must return wrapped values or None")
 
         return result
 
@@ -263,6 +269,3 @@ class BaseCommand(metaclass=Descriptor):
             parameters=parameters,
             return_type=return_type
         )
-
-    async def on_command(self, *args, **kwargs):
-        pass

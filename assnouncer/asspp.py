@@ -63,24 +63,8 @@ class Value(Expression, Generic[T]):
         pass
 
 
-class Dummy(type):
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Expression):
-            return NotImplemented
-
-        return self is other or isinstance(other, self)
-
-    @property
-    def __class__(self):
-        return Expression
-
-    @__class__.setter
-    def __class__(self, _):
-        pass
-
-
 @dataclass(eq=True, order=True, frozen=True)
-class Null(Value[Type[None]], metaclass=Dummy):
+class Null(Value[Type[None]]):
     @classmethod
     def parse(cls, start: int, stop: int, _: str) -> Null:
         return cls(start=start, stop=stop, value=None)

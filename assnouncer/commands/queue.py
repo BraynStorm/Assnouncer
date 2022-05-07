@@ -1,14 +1,13 @@
 from __future__ import annotations
 
+from assnouncer.util import SongRequest
 from assnouncer.commands.base import BaseCommand
 
-from typing import List, Tuple
-
-from assnouncer.util import SongRequest
+from typing import List, Tuple, ClassVar
 
 
 class Queue(BaseCommand):
-    ALIASES: List[str] = ["queue", "q", "яуеуе"]
+    ALIASES: ClassVar[List[str]] = ["queue", "q", "яуеуе"]
 
     async def on_command(self):
         """
@@ -20,7 +19,8 @@ class Queue(BaseCommand):
                 return f"{idx}: {song.uri}"
             return f"{idx}: {song.uri} ({song.query})"
 
-        queue_content = "\n".join(map(stringify, enumerate(self.ass.song_queue)))
+        queue_content = "\n".join(
+            map(stringify, enumerate(self.ass.song_queue)))
         if not queue_content:
             queue_content = "Queue is empty."
         self.respond(f"```{queue_content}```")

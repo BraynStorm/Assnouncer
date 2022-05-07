@@ -5,7 +5,6 @@ import time
 
 from assnouncer import util
 from assnouncer.audio import music
-from assnouncer.asspp import Null
 from assnouncer.util import SongRequest
 from assnouncer.audio.music import MusicState
 from assnouncer.commands import BaseCommand
@@ -76,14 +75,14 @@ class Assnouncer(Client):
                     request = self.song_queue.pop(0)
 
             span = ""
-            if request.start != Null or request.stop != Null:
+            if request.start is not None or request.stop is not None:
                 start = ""
                 stop = ""
 
-                if request.start != Null:
+                if request.start is not None:
                     start = str(request.start)
 
-                if request.stop != Null:
+                if request.stop is not None:
                     stop = str(request.stop)
 
                 span = f"[{start}-{stop}]"
@@ -91,7 +90,7 @@ class Assnouncer(Client):
             if not request.sneaky:
                 self.message(f"Now playing \\` {request.uri} \\` {span}")
 
-            def callback() -> bool:
+            def callback() -> MusicState:
                 with self.lock:
                     if self.skip_event.is_set():
                         self.skip_event.clear()
@@ -141,11 +140,12 @@ class Assnouncer(Client):
 
         print("[info] Ready")
 
-        if self.thread is None:
-            self.thread = Thread(target=self.song_loop, daemon=True)
+        with self.lock:
+            if self.thread is None:
+                self.thread = Thread(target=self.song_loop, daemon=True)
 
-        if not self.thread.is_alive():
-            self.thread.start()
+            if not self.thread.is_alive():
+                self.thread.start()
 
     async def queue_song(self, request: SongRequest):
         with self.lock:

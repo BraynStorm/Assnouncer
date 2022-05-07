@@ -4,11 +4,11 @@ import random
 
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from typing import List, ClassVar
 
 
 class Apricot(BaseCommand):
-    ALIASES: List[str] = ["кайсий", "кайсии", "apricot"]
+    ALIASES: ClassVar[List[str]] = ["кайсий", "кайсии", "apricot"]
 
     async def on_command(self):
         """

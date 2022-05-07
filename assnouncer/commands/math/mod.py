@@ -3,11 +3,11 @@ from __future__ import annotations
 from assnouncer.asspp import Number
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from typing import List, ClassVar
 
 
 class Mod(BaseCommand):
-    ALIASES: List[str] = ["mod"]
+    ALIASES: ClassVar[List[str]] = ["mod"]
 
     async def on_command(self, a: Number, b: Number) -> Number:
         """

@@ -13,11 +13,6 @@ import assnouncer.commands.next
 import assnouncer.commands.settheme
 import assnouncer.commands.dumb
 import assnouncer.commands.apricot
-
-import assnouncer.commands.math.add
-import assnouncer.commands.math.sub
-import assnouncer.commands.math.mul
-import assnouncer.commands.math.div
-import assnouncer.commands.math.mod
+import assnouncer.commands.math
 
 from assnouncer.commands.base import BaseCommand
