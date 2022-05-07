@@ -3,9 +3,11 @@ from __future__ import annotations
 from assnouncer.util import SongRequest
 from assnouncer.commands.base import BaseCommand
 
+from dataclasses import dataclass
 from typing import List, Tuple, ClassVar
 
 
+@dataclass
 class Queue(BaseCommand):
     ALIASES: ClassVar[List[str]] = ["queue", "q", "яуеуе"]
 

@@ -3,9 +3,11 @@ from __future__ import annotations
 from assnouncer.asspp import Number
 from assnouncer.commands.base import BaseCommand
 
+from dataclasses import dataclass
 from typing import List, ClassVar
 
 
+@dataclass
 class Div(BaseCommand):
     ALIASES: ClassVar[List[str]] = ["div"]
 

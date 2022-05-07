@@ -4,9 +4,11 @@ from assnouncer import util
 from assnouncer.asspp import String
 from assnouncer.commands.base import BaseCommand
 
+from dataclasses import dataclass
 from typing import List, ClassVar
 
 
+@dataclass
 class Search(BaseCommand):
     ALIASES: ClassVar[List[str]] = ["search", "find"]
 

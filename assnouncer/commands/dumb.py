@@ -3,9 +3,11 @@ from __future__ import annotations
 from assnouncer.asspp import Identifier, String
 from assnouncer.commands.base import BaseCommand
 
+from dataclasses import dataclass
 from typing import List, Union, ClassVar
 
 
+@dataclass
 class Dumb(BaseCommand):
     ALIASES: ClassVar[List[str]] = ["dumb", "мамкамуипрасе", "dumbdumb"]
 

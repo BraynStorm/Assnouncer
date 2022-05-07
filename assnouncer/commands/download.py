@@ -4,9 +4,11 @@ from assnouncer import util
 from assnouncer.asspp import String, Timestamp
 from assnouncer.commands.base import BaseCommand
 
+from dataclasses import dataclass
 from typing import List, ClassVar
 
 
+@dataclass
 class Download(BaseCommand):
     ALIASES: ClassVar[List[str]] = ["download", "dl"]
 
@@ -18,4 +20,4 @@ class Download(BaseCommand):
         :param start: (Optional) Start timestamp within the song.
         :param stop: (Optional) End timestamp within the song.
         """
-        await util.download(payload.value, start=start, stop=stop, force=True)
+        await util.download(payload, start=start, stop=stop, force=True)

@@ -4,9 +4,11 @@ from assnouncer import util
 from assnouncer.asspp import Identifier
 from assnouncer.commands.base import BaseCommand
 
+from dataclasses import dataclass
 from typing import List, Type, ClassVar
 
 
+@dataclass
 class Help(BaseCommand):
     ALIASES: ClassVar[List[str]] = ["help", "halp", "хелп", "халп"]
 
