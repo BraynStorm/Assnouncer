@@ -20,4 +20,4 @@ class Download(BaseCommand):
         :param start: (Optional) Start timestamp within the song.
         :param stop: (Optional) End timestamp within the song.
         """
-        await util.download(payload, start=start, stop=stop, force=True)
+        await util.download(payload.value, start=start, stop=stop, force=True)
