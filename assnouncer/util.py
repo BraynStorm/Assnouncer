@@ -3,12 +3,12 @@ from __future__ import annotations
 import hashlib
 
 from assnouncer.config import THEMES_DIR, DOWNLOAD_DIR
-from assnouncer.asspp import Timestamp, Number, Null
+from assnouncer.asspp import Timestamp
 from assnouncer.downloaders import BaseDownloader
 from assnouncer.audio.music import AudioSource
 
 from dataclasses import dataclass
-from typing import List, TypeVar, Union
+from typing import List, TypeVar
 from pytube import YouTube, Search
 from pathlib import Path
 from discord import Member
@@ -21,8 +21,8 @@ class SongRequest:
     source: AudioSource
     query: str
     uri: str
-    start: Union[Timestamp, Number] = Null
-    stop: Union[Timestamp, Number] = Null
+    start: Timestamp = None
+    stop: Timestamp = None
     sneaky: bool = False
 
 
@@ -44,17 +44,7 @@ def get_theme_path(user: Member) -> Path:
     return (THEMES_DIR / f"{user.name}#{user.discriminator}").with_suffix(".opus")
 
 
-def get_download_path(
-    uri: str,
-    start: Union[Timestamp, Number] = Null,
-    stop: Union[Timestamp, Number] = Null,
-) -> Path:
-    if start != Null:
-        start = round(start)
-
-    if stop != Null:
-        stop = round(stop)
-
+def get_download_path(uri: str, start: Timestamp = None, stop: Timestamp = None) -> Path:
     hash_string = f"[{start}-{stop}] {uri}"
     hash_value = hashlib.md5(hash_string.encode("utf8")).hexdigest()
     return (DOWNLOAD_DIR / hash_value).with_suffix(".opus")
@@ -91,8 +81,8 @@ async def load_source(uri: Path) -> AudioSource:
 
 async def download(
     query: str,
-    start: Union[Timestamp, Number] = Null,
-    stop: Union[Timestamp, Number] = Null,
+    start: Timestamp = None,
+    stop: Timestamp = None,
     filename: Path = None,
     sneaky: bool = False,
     force: bool = False

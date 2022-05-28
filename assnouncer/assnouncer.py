@@ -5,7 +5,6 @@ import time
 
 from assnouncer import util
 from assnouncer.audio import music
-from assnouncer.asspp import Null
 from assnouncer.util import SongRequest
 from assnouncer.audio.music import MusicState
 from assnouncer.commands import BaseCommand
@@ -28,6 +27,7 @@ class Assnouncer(Client):
     server: Guild = None
     general: TextChannel = None
     voice: VoiceClient = None
+    thread: Thread = None
 
     def __post_init__(self):
         super().__init__()
@@ -75,14 +75,14 @@ class Assnouncer(Client):
                     request = self.song_queue.pop(0)
 
             span = ""
-            if request.start != Null or request.stop != Null:
+            if request.start is not None or request.stop is not None:
                 start = ""
                 stop = ""
 
-                if request.start != Null:
+                if request.start is not None:
                     start = str(request.start)
 
-                if request.stop != Null:
+                if request.stop is not None:
                     stop = str(request.stop)
 
                 span = f"[{start}-{stop}]"
@@ -90,7 +90,7 @@ class Assnouncer(Client):
             if not request.sneaky:
                 self.message(f"Now playing \\` {request.uri} \\` {span}")
 
-            def callback() -> bool:
+            def callback() -> MusicState:
                 with self.lock:
                     if self.skip_event.is_set():
                         self.skip_event.clear()
@@ -121,10 +121,8 @@ class Assnouncer(Client):
                 return
 
             if self.voice is not None:
-                try:
-                    return await self.voice.connect(timeout=2000, reconnect=True)
-                except TimeoutError:
-                    pass
+                print("[info] Trying to reconnect to voice")
+                await self.voice.disconnect(force=True)
 
             self.server = self.get_guild(642747343208185857)
             self.general = self.server.text_channels[0]
@@ -142,7 +140,12 @@ class Assnouncer(Client):
 
         print("[info] Ready")
 
-        Thread(target=self.song_loop, daemon=True).start()
+        with self.lock:
+            if self.thread is None:
+                self.thread = Thread(target=self.song_loop, daemon=True)
+
+            if not self.thread.is_alive():
+                self.thread.start()
 
     async def queue_song(self, request: SongRequest):
         with self.lock:

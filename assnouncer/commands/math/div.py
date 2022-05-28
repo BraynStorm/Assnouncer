@@ -3,11 +3,13 @@ from __future__ import annotations
 from assnouncer.asspp import Number
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, ClassVar
 
 
+@dataclass
 class Div(BaseCommand):
-    ALIASES: List[str] = ["div"]
+    ALIASES: ClassVar[List[str]] = ["div"]
 
     async def on_command(self, a: Number, b: Number) -> Number:
         """

@@ -3,11 +3,13 @@ from __future__ import annotations
 from assnouncer.asspp import Command, String
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, ClassVar
 
 
+@dataclass
 class Parse(BaseCommand):
-    ALIASES: List[str] = ["parse"]
+    ALIASES: ClassVar[List[str]] = ["parse"]
 
     async def on_command(self, payload: String) -> Command:
         """

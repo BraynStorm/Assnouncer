@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, ClassVar
 
 
+@dataclass
 class Next(BaseCommand):
-    ALIASES: List[str] = ["next", "skip", "маняк"]
+    ALIASES: ClassVar[List[str]] = ["next", "skip", "маняк"]
 
     async def on_command(self):
         """

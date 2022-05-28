@@ -4,11 +4,13 @@ from assnouncer import util
 from assnouncer.asspp import String
 from assnouncer.commands.base import BaseCommand
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, ClassVar
 
 
+@dataclass
 class Search(BaseCommand):
-    ALIASES: List[str] = ["search", "find"]
+    ALIASES: ClassVar[List[str]] = ["search", "find"]
 
     async def on_command(self, payload: String) -> String:
         """
