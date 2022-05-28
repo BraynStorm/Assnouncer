@@ -122,7 +122,7 @@ class Assnouncer(Client):
 
             if self.voice is not None:
                 print("[info] Trying to reconnect to voice")
-                await self.voice.disconnect()
+                await self.voice.disconnect(force=True)
 
             self.server = self.get_guild(642747343208185857)
             self.general = self.server.text_channels[0]
