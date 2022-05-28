@@ -25,7 +25,7 @@ class TokenType(Enum):
     EQUAL = "="
     OPEN_BRACE = "\\["
     CLOSE_BRACE = "\\]"
-    TIMESTAMP = "-?\\d+:\\d+"
+    TIMESTAMP = "-?(\\d+:)?\\d+:\\d+"
     NUMBER = "-?\\d+(?:\\.\\d+)?"
     NULL = "null"
     IDENTIFIER = "\\w+"
@@ -144,15 +144,18 @@ class String(Value[str]):
 class Timestamp(Value[int]):
     @staticmethod
     def parse(start: int, stop: int, text: str) -> Timestamp:
-        minutes, seconds = text.split(":")
+        components = ["0", "0", "0"] + text.split(":")
+        hours, minutes, seconds = components[-3:]
         return Timestamp(
             start=start,
             stop=stop,
-            value=int(minutes) * 60 + int(seconds)
+            value=int(hours) * 3600 + int(minutes) * 60 + int(seconds)
         )
 
     def __repr__(self) -> str:
-        return f"{self.value // 60:02.0f}:{self.value % 60:02.0f}"
+        minutes, seconds = divmod(self.value, 60)
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}"
 
     def __round__(self: Timestamp, ndigits: int = None) -> Timestamp:
         return self.new(round(self.value, ndigits=ndigits))
