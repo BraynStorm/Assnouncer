@@ -80,7 +80,6 @@ class Assnouncer(Client):
             music.play(self.voice, request.source, callback=self.skip_callback)
 
         return state
-        
     @debug.profiled
     def handle_song(self, request: SongRequest):
         if not request.sneaky:
