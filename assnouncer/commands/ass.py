@@ -24,10 +24,10 @@ class Ass(BaseCommand):
             result = await BaseCommand.run(self.ass, self.message, command)
 
             if result is not None:
-                self.respond(f"Command result: {result}")
+                await self.respond(f"Command result: {result}")
         except (SyntaxError, TypeError) as e:
             message = (
                 f"Could not run command:\n"
                 f"    {e.__class__.__name__}: {e}"
             )
-            self.respond(f"```{message}```")
+            await self.respond(f"```{message}```")

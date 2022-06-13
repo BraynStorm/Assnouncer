@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import subprocess
+import asyncio
 
 from assnouncer.config import FFMPEG_DIR
 from assnouncer.asspp import Timestamp
@@ -24,7 +24,7 @@ class FallbackDownloader(BaseDownloader):
     ]
 
     @staticmethod
-    def download(url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
+    async def download(url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
         filename_ns = filename.with_suffix("")
 
         cmd = (
@@ -41,10 +41,11 @@ class FallbackDownloader(BaseDownloader):
             f"{url}"
         )
 
-        if subprocess.run(cmd).returncode != 0:
+        process = await asyncio.create_subprocess_shell(cmd, )
+        if await process.wait() != 0:
             return False
 
-        if not BaseDownloader.cut(filename, start=start, stop=stop):
+        if not await BaseDownloader.cut(filename, start=start, stop=stop):
             filename.unlink()
             return False
 

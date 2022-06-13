@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import time
 
 from assnouncer.config import FFMPEG_PATH
 
-from typing import Callable, Union
+from typing import Callable
 from enum import IntEnum
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -47,9 +48,6 @@ def play(
     source: AudioSource,
     callback: Callable[[], MusicState] = None
 ):
-    if not client._connected.is_set():
-        raise ValueError("Not connected to voice.")
-
     if not client.encoder and not source.is_opus():
         client.encoder = Encoder()
 
@@ -67,6 +65,7 @@ def play(
 
     while True:
         while not client.is_connected():
+            asyncio.run_coroutine_threadsafe(client.potential_reconnect(), client.loop)
             time.sleep(0.1)
             reset()
 

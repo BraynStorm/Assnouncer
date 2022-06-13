@@ -23,4 +23,4 @@ class Dumb(BaseCommand):
         else:
             msg = f"{who} is dumb"
 
-        self.respond(msg)
+        await self.respond(msg)

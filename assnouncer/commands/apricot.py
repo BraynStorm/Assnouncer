@@ -21,4 +21,4 @@ class Apricot(BaseCommand):
             "https://i.imgflip.com/1zcw47.jpg",
             "https://www.memecreator.org/static/images/memes/4835791.jpg"
         ]
-        self.respond(random.choice(memes))
+        await self.respond(random.choice(memes))

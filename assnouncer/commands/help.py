@@ -34,4 +34,4 @@ class Help(BaseCommand):
                 f"{commands}"
             )
 
-        self.respond(f"```{message}```")
+        await self.respond(f"```{message}```")

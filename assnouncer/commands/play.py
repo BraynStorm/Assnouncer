@@ -20,10 +20,10 @@ class Play(BaseCommand):
         :param start: (Optional) Start timestamp within the song.
         :param stop: (Optional) End timestamp within the song.
         """
-        request = await util.download(payload.value, start=start, stop=stop)
-        if request is None:
-            uri = util.resolve_uri(payload.value)
+        uri = await util.resolve_uri(payload.value)
+        if uri is None:
             print(f"[warn] No source found for '{uri}'")
-            self.respond("No source found - skipping song")
+            await self.respond("No source found - skipping song")
         else:
+            request = util.download(payload.value, uri, start=start, stop=stop, channel=self.channel)
             await self.ass.queue_song(request)

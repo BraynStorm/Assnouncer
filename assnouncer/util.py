@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import List, TypeVar
 from pytube import YouTube, Search
 from pathlib import Path
-from discord import Member
+from discord import Member, TextChannel
 
 T = TypeVar("T", bound="type")
 
@@ -23,6 +23,7 @@ class SongRequest:
     uri: str
     start: Timestamp = None
     stop: Timestamp = None
+    channel: TextChannel = None
     sneaky: bool = False
 
 
@@ -65,7 +66,7 @@ def can_download(uri: str) -> bool:
     return any(d.accept(uri) for d in subclasses(BaseDownloader))
 
 
-def resolve_uri(query: str) -> str:
+async def resolve_uri(query: str) -> str:
     if can_download(query):
         return query
     else:
@@ -81,17 +82,14 @@ async def load_source(uri: Path) -> AudioSource:
 
 async def download(
     query: str,
+    uri: str,
     start: Timestamp = None,
     stop: Timestamp = None,
     filename: Path = None,
+    channel: TextChannel = None,
     sneaky: bool = False,
     force: bool = False
 ) -> SongRequest:
-    uri = resolve_uri(query)
-    if uri is None:
-        print("[warn] Requested song could not be found or is not supported")
-        return None
-
     if filename is None:
         filename = get_download_path(uri, start=start, stop=stop)
 
@@ -103,6 +101,7 @@ async def download(
             uri=uri,
             start=start,
             stop=stop,
+            channel=channel,
             sneaky=sneaky
         )
 
@@ -115,7 +114,7 @@ async def download(
     for downloader in subclasses(BaseDownloader):
         if downloader.accept(uri):
             print(f"[info] Downloading via {downloader.__name__}")
-            if downloader.download(uri, filename, start=start, stop=stop):
+            if await downloader.download(uri, filename, start=start, stop=stop):
                 print("[info] Download successful")
                 return await load_song()
             else:

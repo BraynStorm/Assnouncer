@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import subprocess
+import asyncio
 
 from assnouncer.config import FFMPEG_PATH
 from assnouncer.asspp import Timestamp
@@ -16,7 +16,7 @@ class SpotifyDownloader(BaseDownloader):
     ]
 
     @staticmethod
-    def download(url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
+    async def download(url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
         cmd = (
             f"spotdl "
             f"-f {FFMPEG_PATH} "
@@ -25,7 +25,8 @@ class SpotifyDownloader(BaseDownloader):
             f"{url}"
         )
 
-        if subprocess.run(cmd).returncode != 0:
+        process = await asyncio.create_subprocess_shell(cmd)
+        if await process.wait() != 0:
             return False
 
         if not BaseDownloader.cut(filename, start=start, stop=stop):

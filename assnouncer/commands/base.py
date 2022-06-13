@@ -151,8 +151,8 @@ class BaseCommand(metaclass=Descriptor):
     def __post_init__(self):
         self.channel = self.message.channel
 
-    def respond(self, message: str):
-        self.ass.message(message, channel=self.channel)
+    async def respond(self, message: str):
+        await self.ass.message(message, channel=self.channel)
 
     @classmethod
     def validate(cls):
@@ -177,7 +177,7 @@ class BaseCommand(metaclass=Descriptor):
 
             command_type = BaseCommand.find_command(command.callable)
             return command_type is not None
-        except (SyntaxError, TypeError) as e:
+        except (SyntaxError, TypeError):
             return False
 
     @classmethod
