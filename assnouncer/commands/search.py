@@ -18,4 +18,4 @@ class Search(BaseCommand):
 
         :param payload: Url or Youtube query for the song.
         """
-        return String.parse(payload.start, payload.stop, util.resolve_uri(payload.value), evaluate=False)
+        return String.parse(payload.start, payload.stop, await util.resolve_uri(payload.value), evaluate=False)
