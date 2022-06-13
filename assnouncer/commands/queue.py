@@ -1,4 +1,5 @@
 from __future__ import annotations
+from concurrent.futures import Future
 
 from assnouncer.util import SongRequest
 from assnouncer.commands.base import BaseCommand
@@ -15,14 +16,14 @@ class Queue(BaseCommand):
         """
         Print all songs in the queue.
         """
-        def stringify(fuck_you: Tuple[int, SongRequest]) -> str:
-            idx, song = fuck_you
+        def stringify(fuck_you: Tuple[int, Future[SongRequest]]) -> str:
+            idx, future = fuck_you
+            song = future.result()
             if song.uri == song.query:
                 return f"{idx}: {song.uri}"
             return f"{idx}: {song.uri} ({song.query})"
 
-        queue_content = "\n".join(
-            map(stringify, enumerate(self.ass.song_queue)))
+        queue_content = "\n".join(map(stringify, enumerate(self.ass.song_queue)))
         if not queue_content:
             queue_content = "Queue is empty."
-        self.respond(f"```{queue_content}```")
+        await self.respond(f"```{queue_content}```")

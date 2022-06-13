@@ -1,11 +1,13 @@
-from dataclasses import dataclass
-import subprocess
+from __future__ import annotations
+
+import asyncio
 import regex
 
 from assnouncer.config import FFMPEG_PATH
 from assnouncer.asspp import Timestamp
 from assnouncer.metaclass import Descriptor
 
+from dataclasses import dataclass
 from typing import List, ClassVar
 from pathlib import Path
 
@@ -29,11 +31,11 @@ class BaseDownloader(metaclass=Descriptor):
         return any(regex.fullmatch(pattern, url) is not None for pattern in cls.PATTERNS)
 
     @staticmethod
-    def download(uri: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
+    async def download(uri: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
         pass
 
     @staticmethod
-    def cut(filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
+    async def cut(filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
         if None not in (start, stop) and start >= stop:
             print(f"[warn] Incorrect timestamp: {start} >= {stop}")
             return False
@@ -52,7 +54,8 @@ class BaseDownloader(metaclass=Descriptor):
             cmd = f"{cmd} -to {stop.value}"
 
         cmd = f"{cmd} -i {filename} -c copy {filename_tmp}"
-        if subprocess.run(cmd).returncode != 0:
+        process = await asyncio.create_subprocess_shell(cmd)
+        if await process.wait() != 0:
             filename_tmp.unlink()
             return False
 

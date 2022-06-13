@@ -21,14 +21,16 @@ class SetTheme(BaseCommand):
         :param stop: (Optional) End timestamp within the song.
         """
         author = self.message.author
-        request = await util.download(
-            payload.value,
-            start=start,
-            stop=stop,
-            filename=util.get_theme_path(author),
-            force=True
-        )
-        if request is not None:
-            print(f"[info] Set theme for {author} to {request.uri}")
+        uri = await util.resolve_uri(payload.value)
+        if uri is not None:
+            print(f"[info] Set theme for {author} to {uri}")
+            await util.download(
+                payload.value,
+                uri,
+                start=start,
+                stop=stop,
+                filename=util.get_theme_path(author),
+                force=True
+            )
         else:
             print(f"[warn] Could not set theme for {author}")

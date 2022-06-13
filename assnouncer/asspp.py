@@ -21,6 +21,7 @@ class ParseError(SyntaxError):
 
 
 class TokenType(Enum):
+    COMMENT = "#"
     COMMA = ","
     EQUAL = "="
     OPEN_BRACE = "\\["
@@ -214,6 +215,15 @@ def tokenize(text: str) -> List[Token]:
     return list(map(make_token, regex.finditer(gigaregex, text, flags=VERSION1)))
 
 
+def strip_comments(tokens: List[Token]) -> List[Token]:
+    for idx, token in enumerate(tokens):
+        if token.type is not TokenType.COMMENT:
+            continue
+
+        return tokens[:idx]
+    return tokens
+
+
 def find_brace(tokens: List[Token]) -> List[Token]:
     if not tokens:
         return None
@@ -366,7 +376,11 @@ def parse_expression(tokens: List[Token]) -> Expression:
     while tokens and tokens[0].type is TokenType.OPEN_BRACE:
         arglist = find_brace(tokens)
         if arglist is None:
-            raise SyntaxError("Open brace not closed")
+            raise ParseError(
+                text="Open brace not closed",
+                start=tokens[0].start,
+                stop=tokens[0].stop
+            )
         arguments = parse_container(arglist)
         start = callable.start
         stop = arguments.stop
@@ -385,13 +399,12 @@ def parse_expression(tokens: List[Token]) -> Expression:
 
 
 def parse(text: str) -> Command:
-    if text.startswith("`") and text.endswith("`"):
-        text = text[1:-1]
-
     tokens = tokenize(text)
-
     if not tokens:
         raise SyntaxError("Empty input")
+
+    tokens = strip_comments(tokens)
+    text = text[:tokens[-1].stop]
 
     if len(tokens) > 1 and tokens[1].type is TokenType.OPEN_BRACE:
         tokens = tokens[:1] + find_brace(tokens[1:])
@@ -432,3 +445,7 @@ def parse(text: str) -> Command:
         ))
 
     return callable
+
+
+if __name__ == "__main__":
+    print(tokenize("test # test []"))
