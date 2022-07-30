@@ -5,6 +5,7 @@ import asyncio
 
 from assnouncer import debug
 from assnouncer import util
+from assnouncer import config
 from assnouncer.util import SongRequest
 from assnouncer.queue import Queue
 from assnouncer.commands import BaseCommand
@@ -134,7 +135,8 @@ class Assnouncer(Client):
             print("[info] Trying to reconnect to voice")
             await self.voice.disconnect(force=True)
 
-        self.server: Guild = self.get_guild(642747343208185857)
+        print(f"[info] Connecting to {config.GUILD_ID}")
+        self.server: Guild = self.get_guild(config.GUILD_ID)
         self.general: TextChannel = self.server.text_channels[0]
 
         vc: VoiceChannel = self.server.voice_channels[0]
@@ -183,7 +185,7 @@ class Assnouncer(Client):
         before: VoiceState,
         after: VoiceState
     ):
-        if member == self.user:
+        if member == self.user or member.guild != self.server:
             return
 
         prev_channel = before.channel
@@ -193,7 +195,7 @@ class Assnouncer(Client):
             await self.play_theme(member)
 
     async def on_message(self, message: Message):
-        if self.voice is None:
+        if self.voice is None or message.guild != self.server:
             return
 
         if message.author == self.user:
