@@ -6,6 +6,7 @@ import asyncio
 from assnouncer import debug
 from assnouncer import util
 from assnouncer import config
+from assnouncer.asspp import Timestamp
 from assnouncer.util import SongRequest
 from assnouncer.queue import Queue
 from assnouncer.commands import BaseCommand
@@ -16,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Awaitable, List, TypeVar
 from concurrent.futures import Future
 from threading import Event, Thread
+from asyncio import Lock
 from discord import (
     Client, Game, TextChannel, Message,
     Guild, VoiceClient, Member, VoiceState,
@@ -30,6 +32,7 @@ class Assnouncer(Client):
     skip_event: Event = field(default_factory=Event)
     song_queue: Queue[Future[SongRequest]] = field(default_factory=Queue)
     theme_queue: Queue[SongRequest] = field(default_factory=Queue)
+    lock: Lock = field(default_factory=Lock)
     thread: Thread = None
     server: Guild = None
     general: TextChannel = None
@@ -61,6 +64,10 @@ class Assnouncer(Client):
         return asyncio.run_coroutine_threadsafe(coro, self.loop)
 
     @debug.profiled
+    def reconnect_callback(self) -> VoiceClient:
+        return self.run_coroutine(self.ensure_connected()).result()
+
+    @debug.profiled
     def skip_callback(self) -> MusicState:
         if self.skip_event.is_set():
             self.skip_event.clear()
@@ -78,7 +85,12 @@ class Assnouncer(Client):
             state = MusicState.INTERRUPTED
 
             request = self.theme_queue.pop()
-            music.play(self.voice, request.source, callback=self.skip_callback)
+            self.run_coroutine(self.set_speaking(True))
+            music.play(
+                request.source,
+                reconnect_callback=self.reconnect_callback,
+                state_callback=self.skip_callback
+            )
 
         return state
 
@@ -106,69 +118,86 @@ class Assnouncer(Client):
 
         self.skip_event.clear()
 
-        self.run_coroutine(self.ensure_connected())
-
         self.run_coroutine(self.set_speaking(True))
-        music.play(self.voice, request.source, callback=self.theme_callback)
+        music.play(
+            request.source,
+            reconnect_callback=self.reconnect_callback,
+            state_callback=self.theme_callback
+        )
         self.run_coroutine(self.set_speaking(False))
 
     def song_loop(self):
         while True:
-            if self.song_queue.empty() and self.theme_queue.empty():
+            request = self.theme_queue.pop() or self.song_queue.pop()
+            if request is None:
                 time.sleep(0.1)
                 continue
 
-            if not self.voice.is_connected():
-                time.sleep(0.1)
+            if isinstance(request, Future):
+                request = request.result()
+
+            if request is None:
+                message = "Маняк на бота му стана лошо, няма такава песен"
+                self.run_coroutine(self.message(message))
                 continue
 
-            request = self.theme_queue.pop() or self.song_queue.pop().result()
             self.handle_song(request)
             debug.print_report()
 
     @debug.profiled
     async def ensure_connected(self):
-        if self.voice is not None and self.voice.is_connected():
-            return
+        async with self.lock:
+            if self.voice is not None and self.voice.is_connected():
+                return self.voice
 
-        if self.voice is not None:
-            print("[info] Trying to reconnect to voice")
-            await self.voice.disconnect(force=True)
+            if self.voice is not None:
+                print("[info] Trying to reconnect to voice")
+                if await self.voice.potential_reconnect():
+                    return self.voice
 
-        print(f"[info] Connecting to {config.GUILD_ID}")
-        self.server: Guild = self.get_guild(config.GUILD_ID)
-        self.general: TextChannel = self.server.text_channels[0]
+            print(f"[info] Connecting to {config.GUILD_ID}")
+            self.server: Guild = self.get_guild(config.GUILD_ID)
+            self.general: TextChannel = self.server.text_channels[0]
+            
+            vc: VoiceChannel = self.server.voice_channels[0]
+            self.voice = await vc.connect()
 
-        vc: VoiceChannel = self.server.voice_channels[0]
-        self.voice = await vc.connect()
+            return self.voice
 
     async def on_ready(self):
         print("[info] Getting ready")
         await self.set_activity("Getting ready")
-
         await self.ensure_connected()
-
         await self.set_activity("Ready")
         print("[info] Ready")
 
+        theme_path = util.get_theme_path("Assnouncer")
+        theme_source = await util.load_source(theme_path)
+        theme_request = SongRequest(
+            source=theme_source,
+            query="Assnouncer's theme",
+            uri="Assnouncer's theme",
+            channel=self.general,
+            sneaky=True
+        )
+        self.theme_queue.put(theme_request)
+
         if self.thread is None or not self.thread.is_alive():
-            self.thread = Thread(target=self.song_loop)
+            self.thread = Thread(target=self.song_loop, daemon=True)
             self.thread.start()
 
     async def queue_song(self, request: Awaitable[SongRequest]):
-        await self.ensure_connected()
-
         self.song_queue.put(self.run_coroutine(request))
 
     async def play_theme(self, user: Member):
-        theme_path = util.get_theme_path(user)
-        source = await util.load_source(theme_path)
+        await self.ensure_connected()
 
+        theme_path = util.get_theme_path(user)
+
+        source = await util.load_source(theme_path)
         if source is None:
             print(f"[warn] No theme for {user}")
             return
-
-        await self.ensure_connected()
 
         request = SongRequest(
             source=source,
@@ -195,7 +224,7 @@ class Assnouncer(Client):
             await self.play_theme(member)
 
     async def on_message(self, message: Message):
-        if self.voice is None or message.guild != self.server:
+        if message.guild != self.server:
             return
 
         if message.author == self.user:
@@ -213,6 +242,7 @@ class Assnouncer(Client):
             return
 
         print(f"[info] Parsing: {message.content!r}")
+        await self.ensure_connected()
 
         for idx, line in enumerate(lines):
             try:

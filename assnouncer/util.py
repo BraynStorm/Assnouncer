@@ -8,7 +8,7 @@ from assnouncer.downloaders import BaseDownloader
 from assnouncer.audio.music import AudioSource
 
 from dataclasses import dataclass
-from typing import List, TypeVar
+from typing import List, TypeVar, Union
 from pytube import YouTube, Search
 from pathlib import Path
 from discord import Member, TextChannel
@@ -41,8 +41,10 @@ def subclasses(cls: T) -> List[T]:
     return subclasses
 
 
-def get_theme_path(user: Member) -> Path:
-    return (THEMES_DIR / f"{user.name}#{user.discriminator}").with_suffix(".opus")
+def get_theme_path(user: Union[Member, str]) -> Path:
+    if isinstance(user, Member):
+        user = f"{user.name}#{user.discriminator}"
+    return (THEMES_DIR / f"{user}").with_suffix(".opus")
 
 
 def get_download_path(uri: str, start: Timestamp = None, stop: Timestamp = None) -> Path:
