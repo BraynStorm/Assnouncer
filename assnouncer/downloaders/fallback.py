@@ -20,7 +20,8 @@ class FallbackDownloader(BaseDownloader):
         r"https://(www\.)?soundcloud\.com/.*",
         # TODO(daniel): Dailymotion download takes ages
         #   r"https://(www\.)?dailymotion\.com/video/.*",
-        r"https://(www\.)?vimeo\.com/.*"
+        r"https://(www\.)?vimeo\.com/.*",
+        r"https://(www\.)?streamable.com/.*",
     ]
 
     @staticmethod

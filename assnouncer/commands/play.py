@@ -22,7 +22,7 @@ class Play(BaseCommand):
         """
         uri = await util.resolve_uri(payload.value)
         if uri is None:
-            print(f"[warn] No source found for '{uri}'")
+            print(f"[warn] No source found for '{payload.value}'")
             await self.respond("No source found - skipping song")
         else:
             request = util.download(payload.value, uri, start=start, stop=stop, channel=self.channel)

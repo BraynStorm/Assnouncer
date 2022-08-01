@@ -23,5 +23,4 @@ TOKEN_PATH = HERE / "token"
 FFMPEG_DIR = Path(env("FFMPEG_DIR", "C:/Users/Admin/Documents/Applications/"))
 FFMPEG_PATH = FFMPEG_DIR / "ffmpeg.exe"
 
-
 GUILD_ID = 642747343208185857
