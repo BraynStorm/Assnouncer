@@ -158,7 +158,6 @@ class Assnouncer(Client):
             print(f"[info] Connecting to {config.GUILD_ID}")
             self.server: Guild = self.get_guild(config.GUILD_ID)
             self.general: TextChannel = self.server.text_channels[0]
-            
             vc: VoiceChannel = self.server.voice_channels[0]
             self.voice = await vc.connect()
 
