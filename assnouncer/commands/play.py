@@ -10,7 +10,7 @@ from typing import List, ClassVar
 
 @dataclass
 class Play(BaseCommand):
-    ALIASES: ClassVar[List[str]] = ["play", "плаъ", "πλαυ", "playing"]
+    ALIASES: ClassVar[List[str]] = ["play", "Play", "плаъ", "πλαυ", "playing"]
 
     async def on_command(self, payload: String, start: Timestamp = None, stop: Timestamp = None):
         """

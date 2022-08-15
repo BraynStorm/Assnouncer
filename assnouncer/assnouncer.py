@@ -6,7 +6,6 @@ import asyncio
 from assnouncer import debug
 from assnouncer import util
 from assnouncer import config
-from assnouncer.asspp import Timestamp
 from assnouncer.util import SongRequest
 from assnouncer.queue import Queue
 from assnouncer.commands import BaseCommand
@@ -159,9 +158,14 @@ class Assnouncer(Client):
             self.server: Guild = self.get_guild(config.GUILD_ID)
             self.general: TextChannel = self.server.text_channels[0]
             vc: VoiceChannel = self.server.voice_channels[0]
-            self.voice = await vc.connect()
 
-            return self.voice
+            while True:
+                try:
+                    self.voice = await vc.connect(timeout=10.0)
+                    return self.voice
+                except TimeoutError:
+                    print(f"[warn] Failed to connect to {config.GUILD_ID}")
+
 
     async def on_ready(self):
         print("[info] Getting ready")

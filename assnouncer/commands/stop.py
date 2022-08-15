@@ -8,7 +8,7 @@ from typing import List, ClassVar
 
 @dataclass
 class Stop(BaseCommand):
-    ALIASES: ClassVar[List[str]] = ["stop", "dilyankata", ]
+    ALIASES: ClassVar[List[str]] = ["stop", "Stop", "dilyankata", ]
 
     async def on_command(self):
         """
