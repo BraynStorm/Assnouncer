@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from assnouncer.config import FFMPEG_PATH
+from assnouncer.config import FFMPEG_DIR, FFMPEG_PATH, FFPROBE_PATH
 
 from typing import Callable
 from enum import IntEnum
@@ -29,7 +29,7 @@ class AudioSource(FFmpegOpusAudio):
         self.where = where
 
     @classmethod
-    async def from_probe(cls, source_path: Path, **kwargs):
+    async def from_source(cls, source_path: Path, **kwargs):
         where = TemporaryDirectory()
         load_path = Path(where.name) / "bingchillin.opus"
         load_path.write_bytes(source_path.read_bytes())
@@ -37,6 +37,7 @@ class AudioSource(FFmpegOpusAudio):
         return await super().from_probe(
             source=str(load_path),
             executable=str(FFMPEG_PATH),
+            method="fallback",
             where=where,
             **kwargs
         )

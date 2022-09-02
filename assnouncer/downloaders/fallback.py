@@ -14,8 +14,9 @@ from pathlib import Path
 @dataclass
 class FallbackDownloader(BaseDownloader):
     PATTERNS: ClassVar[List[str]] = [
+        r"https://.*.(wav|mp3|mp4|opus|ogg|m4a)",
         r"https://youtu.be/.*",
-        r"https://cdn\.discordapp\.com/attachments/[0-9]+/[0-9]+/.*\.(wav|mp3|opus|ogg|m4a)",
+        r"https://cdn\.discordapp\.com/attachments/[0-9]+/[0-9]+/.*\.(wav|mp3|mp4|opus|ogg|m4a)",
         r"https://(www\.)?youtube\.com/watch\?v=.*",
         r"https://(www\.)?soundcloud\.com/.*",
         # TODO(daniel): Dailymotion download takes ages
@@ -32,7 +33,7 @@ class FallbackDownloader(BaseDownloader):
             f"yt-dlp "
             f"-x "
             f"-i "
-            f"-f ba "
+            # f"-f ba "
             f"-o {filename_ns}.%(ext)s "
             f"--http-chunk-size 10M "
             f"--buffer-size 32K "

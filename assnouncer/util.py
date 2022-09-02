@@ -79,7 +79,7 @@ async def load_source(uri: Path) -> AudioSource:
     if not uri.is_file():
         return None
 
-    return await AudioSource.from_probe(uri)
+    return await AudioSource.from_source(uri)
 
 
 async def download(

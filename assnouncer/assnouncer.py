@@ -20,7 +20,7 @@ from asyncio import Lock
 from discord import (
     Client, Game, TextChannel, Message,
     Guild, VoiceClient, Member, VoiceState,
-    Intents, VoiceChannel
+    Intents, VoiceChannel, SpeakingState
 )
 
 T = TypeVar("T")
@@ -38,7 +38,9 @@ class Assnouncer(Client):
     voice: VoiceClient = None
 
     def __post_init__(self):
-        super().__init__(intents=Intents.default())
+        intents = Intents.default()
+        intents.message_content = True
+        super().__init__(intents=intents)
 
     def skip(self):
         self.skip_event.set()
@@ -50,7 +52,7 @@ class Assnouncer(Client):
     async def set_activity(self, activity: str):
         return await self.change_presence(activity=Game(name=activity))
 
-    async def set_speaking(self, speaking: bool):
+    async def set_speaking(self, speaking: SpeakingState):
         return await self.voice.ws.speak(speaking)
 
     async def message(self, message: str, channel: TextChannel = None):
@@ -84,7 +86,7 @@ class Assnouncer(Client):
             state = MusicState.INTERRUPTED
 
             request = self.theme_queue.pop()
-            self.run_coroutine(self.set_speaking(True))
+            self.run_coroutine(self.set_speaking(SpeakingState.soundshare))
             music.play(
                 request.source,
                 reconnect_callback=self.reconnect_callback,
@@ -117,13 +119,13 @@ class Assnouncer(Client):
 
         self.skip_event.clear()
 
-        self.run_coroutine(self.set_speaking(True))
+        self.run_coroutine(self.set_speaking(SpeakingState.soundshare))
         music.play(
             request.source,
             reconnect_callback=self.reconnect_callback,
             state_callback=self.theme_callback
         )
-        self.run_coroutine(self.set_speaking(False))
+        self.run_coroutine(self.set_speaking(SpeakingState.none))
 
     def song_loop(self):
         while True:
