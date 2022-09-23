@@ -13,7 +13,7 @@ from assnouncer.audio import music
 from assnouncer.audio.music import MusicState
 
 from dataclasses import dataclass, field
-from typing import Awaitable, List, TypeVar
+from typing import Awaitable, List, TypeVar, TYPE_CHECKING
 from concurrent.futures import Future
 from threading import Event, Thread
 from asyncio import Lock
