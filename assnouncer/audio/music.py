@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import time
 
-from assnouncer.config import FFMPEG_PATH
+from assnouncer.config import FFMPEG_DIR, FFMPEG_PATH, FFPROBE_PATH
 
 from typing import Callable
 from enum import IntEnum
@@ -30,7 +29,7 @@ class AudioSource(FFmpegOpusAudio):
         self.where = where
 
     @classmethod
-    async def from_probe(cls, source_path: Path, **kwargs):
+    async def from_source(cls, source_path: Path, **kwargs):
         where = TemporaryDirectory()
         load_path = Path(where.name) / "bingchillin.opus"
         load_path.write_bytes(source_path.read_bytes())
@@ -38,18 +37,18 @@ class AudioSource(FFmpegOpusAudio):
         return await super().from_probe(
             source=str(load_path),
             executable=str(FFMPEG_PATH),
+            method="fallback",
             where=where,
             **kwargs
         )
 
 
 def play(
-    client: VoiceClient,
     source: AudioSource,
-    callback: Callable[[], MusicState] = None
+    reconnect_callback: Callable[[], VoiceClient],
+    state_callback: Callable[[], MusicState]
 ):
-    if not client.encoder and not source.is_opus():
-        client.encoder = Encoder()
+    client = reconnect_callback()
 
     loops: int = None
     time_start: float = None
@@ -65,7 +64,7 @@ def play(
 
     while True:
         while not client.is_connected():
-            asyncio.run_coroutine_threadsafe(client.potential_reconnect(), client.loop)
+            client = reconnect_callback()
             time.sleep(0.1)
             reset()
 
@@ -77,16 +76,16 @@ def play(
 
         client.send_audio_packet(data, encode=not source.is_opus())
 
-        if callback is not None:
-            result = callback()
-            if result is MusicState.STOPPED:
-                break
+        result = state_callback()
+        if result is MusicState.STOPPED:
+            break
 
-            if result is MusicState.INTERRUPTED:
-                reset()
-                continue
+        if result is MusicState.INTERRUPTED:
+            reset()
+            continue
 
         time_next = time_start + OPUS_DELAY * loops
         delay = max(0, OPUS_DELAY + (time_next - time.perf_counter()))
 
-        time.sleep(delay)
+        if delay > 0:
+            time.sleep(delay)

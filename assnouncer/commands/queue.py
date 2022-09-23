@@ -10,7 +10,7 @@ from typing import List, Tuple, ClassVar
 
 @dataclass
 class Queue(BaseCommand):
-    ALIASES: ClassVar[List[str]] = ["queue", "q", "яуеуе"]
+    ALIASES: ClassVar[List[str]] = ["queue", "Queue", "q", "яуеуе"]
 
     async def on_command(self):
         """

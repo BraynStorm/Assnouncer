@@ -93,6 +93,8 @@ if ENABLE_DEBUGGING:
         def wrapper(*args, **kwargs):
             with Timer():
                 with Timer() as timer:
+                    # TODO@Daniel:
+                    #   Support async functions
                     result = func(*args, **kwargs)
 
                 with Timer():

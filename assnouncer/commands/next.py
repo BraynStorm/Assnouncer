@@ -8,7 +8,7 @@ from typing import List, ClassVar
 
 @dataclass
 class Next(BaseCommand):
-    ALIASES: ClassVar[List[str]] = ["next", "skip", "маняк"]
+    ALIASES: ClassVar[List[str]] = ["next", "Next", "skip", "Skip", "маняк"]
 
     async def on_command(self):
         """

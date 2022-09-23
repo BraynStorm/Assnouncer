@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from collections import deque
 from typing import Generic, Iterator, TypeVar
-from threading import Lock
+from threading import RLock
 
 T = TypeVar("T")
 
@@ -11,7 +11,7 @@ T = TypeVar("T")
 @dataclass(frozen=True)
 class Queue(Generic[T]):
     data: deque[T] = field(default_factory=deque)
-    lock: Lock = field(default_factory=Lock)
+    lock: RLock = field(default_factory=RLock)
 
     def empty(self) -> bool:
         return self.peek() is None
