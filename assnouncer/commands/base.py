@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 
 from assnouncer import asspp
 from assnouncer import util
@@ -15,6 +16,8 @@ if TYPE_CHECKING:
     from assnouncer.assnouncer import Assnouncer
     
     from discord.abc import MessageableChannel
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -212,7 +215,7 @@ class BaseCommand(metaclass=Descriptor):
         if command_type is None:
             return None
 
-        print(f"[info] Running {command_type.__name__}")
+        logger.info(f"Running {command_type.__name__}")
 
         arguments = expression.arguments
 

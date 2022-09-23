@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 
 from assnouncer.config import THEMES_DIR, DOWNLOAD_DIR
 from assnouncer.asspp import Timestamp
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
     from discord.abc import MessageableChannel
 
 T = TypeVar("T", bound="type")
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -62,7 +65,7 @@ def search_song(query: str) -> str:
     if results:
         return results[0].watch_url
     else:
-        print(f"[warn] Not Youtube results for {repr(query)}")
+        logger.warn(f"Not Youtube results for {query!r}")
 
     return None
 
@@ -118,11 +121,11 @@ async def download(
 
     for downloader in subclasses(BaseDownloader):
         if downloader.accept(uri):
-            print(f"[info] Downloading via {downloader.__name__}")
+            logger.info(f"Downloading via {downloader.__name__}")
             if await downloader.download(uri, filename, start=start, stop=stop):
-                print("[info] Download successful")
+                logger.info("Download successful")
                 return await load_song()
             else:
-                print("[warn] Download unsuccessful")
+                logger.warn("Download unsuccessful")
 
     return None
