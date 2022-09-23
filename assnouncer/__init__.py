@@ -61,7 +61,7 @@ if utils.stream_supports_colour(handler.stream):
     formatter = ColourFormatter()
 else:
     dt_fmt = '%Y-%m-%d %H:%M:%S'
-    formatter = Formatter('[{asctime}] [{levelname:<8}] {name:<32}: {message}', dt_fmt, style='{')
+    formatter = Formatter('[{asctime}] [{levelname:<8}] {name:<24}: {message}', dt_fmt, style='{')
 
 logger = logging.getLogger()
 
