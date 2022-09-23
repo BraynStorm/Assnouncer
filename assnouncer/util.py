@@ -8,10 +8,13 @@ from assnouncer.downloaders import BaseDownloader
 from assnouncer.audio.music import AudioSource
 
 from dataclasses import dataclass
-from typing import List, TypeVar, Union
+from typing import List, TypeVar, Union, TYPE_CHECKING
 from pytube import YouTube, Search
 from pathlib import Path
-from discord import Member, TextChannel
+from discord import User, Member
+
+if TYPE_CHECKING:
+    from discord.abc import MessageableChannel
 
 T = TypeVar("T", bound="type")
 
@@ -23,7 +26,7 @@ class SongRequest:
     uri: str
     start: Timestamp = None
     stop: Timestamp = None
-    channel: TextChannel = None
+    channel: MessageableChannel = None
     sneaky: bool = False
 
 
@@ -41,8 +44,8 @@ def subclasses(cls: T) -> List[T]:
     return subclasses
 
 
-def get_theme_path(user: Union[Member, str]) -> Path:
-    if isinstance(user, Member):
+def get_theme_path(user: Union[Member, User, str]) -> Path:
+    if isinstance(user, Member) or isinstance(user, User):
         user = f"{user.name}#{user.discriminator}"
     return (THEMES_DIR / f"{user}").with_suffix(".opus")
 

@@ -146,7 +146,7 @@ class BaseCommand(metaclass=Descriptor):
 
     ass: Assnouncer
     message: Message
-    channel: TextChannel = None
+    channel: MessageableChannel = None
 
     def __post_init__(self):
         self.channel = self.message.channel
