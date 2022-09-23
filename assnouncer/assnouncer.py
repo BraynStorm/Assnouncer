@@ -23,6 +23,9 @@ from discord import (
     Intents, VoiceChannel, SpeakingState
 )
 
+if TYPE_CHECKING:
+    from discord.abc import MessageableChannel
+
 T = TypeVar("T")
 
 
@@ -55,7 +58,7 @@ class Assnouncer(Client):
     async def set_speaking(self, speaking: SpeakingState):
         return await self.voice.ws.speak(speaking)
 
-    async def message(self, message: str, channel: TextChannel = None):
+    async def message(self, message: str, channel: MessageableChannel = None):
         if channel is None:
             channel = self.general
 

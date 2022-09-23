@@ -9,10 +9,12 @@ from assnouncer.metaclass import Descriptor
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, List, Tuple, Type
-from discord import Message, TextChannel
+from discord import Message
 
 if TYPE_CHECKING:
     from assnouncer.assnouncer import Assnouncer
+    
+    from discord.abc import MessageableChannel
 
 
 @dataclass

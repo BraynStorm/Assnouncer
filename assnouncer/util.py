@@ -91,7 +91,7 @@ async def download(
     start: Timestamp = None,
     stop: Timestamp = None,
     filename: Path = None,
-    channel: TextChannel = None,
+    channel: MessageableChannel = None,
     sneaky: bool = False,
     force: bool = False
 ) -> SongRequest:
