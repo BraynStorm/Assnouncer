@@ -3,6 +3,7 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from pathlib import Path
 
+import assnouncer
 from assnouncer import config
 from assnouncer.assnouncer import Assnouncer
 

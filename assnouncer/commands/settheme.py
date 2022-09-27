@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 from assnouncer import util
 from assnouncer.asspp import String, Timestamp
 from assnouncer.commands.base import BaseCommand
 
 from dataclasses import dataclass
 from typing import List, ClassVar
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -23,7 +27,7 @@ class SetTheme(BaseCommand):
         author = self.message.author
         uri = await util.resolve_uri(payload.value)
         if uri is not None:
-            print(f"[info] Set theme for {author} to {uri}")
+            logger.info(f"Set theme for {author} to {uri}")
             await util.download(
                 payload.value,
                 uri,
@@ -33,4 +37,4 @@ class SetTheme(BaseCommand):
                 force=True
             )
         else:
-            print(f"[warn] Could not set theme for {author}")
+            logger.warn(f"Could not set theme for {author}")

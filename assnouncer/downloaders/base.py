@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import asyncio
 import regex
 
@@ -11,6 +12,8 @@ from dataclasses import dataclass
 from typing import List, ClassVar
 from pathlib import Path
 
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class BaseDownloader(metaclass=Descriptor):
@@ -37,7 +40,7 @@ class BaseDownloader(metaclass=Descriptor):
     @staticmethod
     async def cut(filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
         if None not in (start, stop) and start >= stop:
-            print(f"[warn] Incorrect timestamp: {start} >= {stop}")
+            logger.warn(f"Incorrect timestamp: {start} >= {stop}")
             return False
 
         if start is None and stop is None:

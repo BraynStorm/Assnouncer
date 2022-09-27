@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import asyncio
+import logging
 
 from assnouncer import debug
 from assnouncer import util
@@ -27,6 +28,9 @@ if TYPE_CHECKING:
     from discord.abc import MessageableChannel
 
 T = TypeVar("T")
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -155,11 +159,11 @@ class Assnouncer(Client):
                 return self.voice
 
             if self.voice is not None:
-                print("[info] Trying to reconnect to voice")
+                logger.info("Trying to reconnect to voice")
                 if await self.voice.potential_reconnect():
                     return self.voice
 
-            print(f"[info] Connecting to {config.GUILD_ID}")
+            logger.info(f"Connecting to {config.GUILD_ID}")
             self.server: Guild = self.get_guild(config.GUILD_ID)
             self.general: TextChannel = self.server.text_channels[0]
             vc: VoiceChannel = self.server.voice_channels[0]
@@ -169,15 +173,14 @@ class Assnouncer(Client):
                     self.voice = await vc.connect(timeout=10.0)
                     return self.voice
                 except TimeoutError:
-                    print(f"[warn] Failed to connect to {config.GUILD_ID}")
-
+                    logger.warn(f"Failed to connect to {config.GUILD_ID}")
 
     async def on_ready(self):
-        print("[info] Getting ready")
+        logger.info("Getting ready")
         await self.set_activity("Getting ready")
         await self.ensure_connected()
         await self.set_activity("Ready")
-        print("[info] Ready")
+        logger.info("Ready")
 
         theme_path = util.get_theme_path("Assnouncer")
         theme_source = await util.load_source(theme_path)
@@ -204,7 +207,7 @@ class Assnouncer(Client):
 
         source = await util.load_source(theme_path)
         if source is None:
-            print(f"[warn] No theme for {user}")
+            logger.warn(f"No theme for {user}")
             return
 
         request = SongRequest(
@@ -249,13 +252,13 @@ class Assnouncer(Client):
         elif "\n" in content:
             return
 
-        print(f"[info] Parsing: {message.content!r}")
+        logger.info(f"Parsing: {message.content!r}")
         await self.ensure_connected()
 
         for idx, line in enumerate(lines):
             try:
                 command = BaseCommand.parse(line)
-                print(f"[info] Trying to run '{command}'")
+                logger.info(f"Trying to run '{command}'")
                 await BaseCommand.run(self, message, command)
             except (SyntaxError, TypeError) as e:
-                print(f"[warn] Command #{idx}: {e}")
+                logger.warn(f"Command #{idx}: {e}")
