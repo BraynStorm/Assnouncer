@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from assnouncer import util
+from assnouncer import stats
 from assnouncer.asspp import String, Timestamp
 from assnouncer.commands.base import BaseCommand
 
@@ -29,5 +30,14 @@ class Play(BaseCommand):
             logger.warn(f"No source found for '{payload.value}'")
             await self.respond("No source found - skipping song")
         else:
-            request = util.download(payload.value, uri, start=start, stop=stop, channel=self.channel)
+            requested_by_user = self.message.author
+            requested_by = f"{requested_by_user.name}#{requested_by_user.discriminator}"
+            request = util.download(
+                payload.value,
+                uri,
+                start=start,
+                stop=stop,
+                channel=self.channel,
+                user=requested_by
+            )
             await self.ass.queue_song(request)

@@ -8,6 +8,7 @@ from assnouncer.asspp import Timestamp
 from assnouncer.downloaders import BaseDownloader
 from assnouncer.audio.music import AudioSource
 
+from datetime import datetime
 from dataclasses import dataclass
 from typing import List, TypeVar, Union, TYPE_CHECKING
 from pytube import YouTube, Search
@@ -31,6 +32,8 @@ class SongRequest:
     stop: Timestamp = None
     channel: MessageableChannel = None
     sneaky: bool = False
+    queued_by: str = None
+    queued_on: datetime = None
 
 
 def subclasses(cls: T) -> List[T]:
@@ -53,7 +56,9 @@ def get_theme_path(user: Union[Member, User, str]) -> Path:
     return (THEMES_DIR / f"{user}").with_suffix(".opus")
 
 
-def get_download_path(uri: str, start: Timestamp = None, stop: Timestamp = None) -> Path:
+def get_download_path(
+    uri: str, start: Timestamp = None, stop: Timestamp = None
+) -> Path:
     hash_string = f"[{start}-{stop}] {uri}"
     hash_value = hashlib.md5(hash_string.encode("utf8")).hexdigest()
     return (DOWNLOAD_DIR / hash_value).with_suffix(".opus")
@@ -96,8 +101,11 @@ async def download(
     filename: Path = None,
     channel: MessageableChannel = None,
     sneaky: bool = False,
-    force: bool = False
+    force: bool = False,
+    user: str = None
 ) -> SongRequest:
+    queued_on = datetime.now()
+
     if filename is None:
         filename = get_download_path(uri, start=start, stop=stop)
 
@@ -110,7 +118,9 @@ async def download(
             start=start,
             stop=stop,
             channel=channel,
-            sneaky=sneaky
+            sneaky=sneaky,
+            queued_by=user,
+            queued_on=queued_on
         )
 
     if filename.is_file():
