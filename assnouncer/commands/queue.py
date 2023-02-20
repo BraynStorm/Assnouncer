@@ -1,9 +1,9 @@
 from __future__ import annotations
-from concurrent.futures import Future
 
 from assnouncer.util import SongRequest
 from assnouncer.commands.base import BaseCommand
 
+from concurrent.futures import Future
 from dataclasses import dataclass
 from typing import List, Tuple, ClassVar
 
