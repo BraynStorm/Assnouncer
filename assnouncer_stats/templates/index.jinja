@@ -1,0 +1,76 @@
+{% extends 'base.jinja '%}
+{% block content %}
+
+<style>
+    html,
+    body {
+        font-family: Consolas;
+    }
+
+    table,
+    td {
+        box-sizing: border-box;
+        border-collapse: collapse;
+        border: 1px solid black;
+    }
+
+    td {
+        padding: 0 0.2em 0 0.2em;
+    }
+
+    .card.container {
+        display: flex;
+        ;
+        flex-flow: row wrap;
+        max-width: 100vw;
+        justify-content: center;
+    }
+
+    .card {
+        max-width: 200px;
+        max-height: 300px;
+        border-radius: 10px;
+    }
+</style>
+
+<div class="card container">
+    {% for url, records in group_by_url(stats(servers[0]).plays)[:5] %}
+    {# <iframe class="card youtube" width="200" height="300" src="{{records[0].url}}" title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen></iframe> #}
+    {% endfor%}
+</div>
+
+
+<table>
+    <thead>
+    <tr>
+    <td>#</td>
+    <td>Played</td>
+    <td>Song</td>
+    </tr>
+    </thead>
+    <tbody>
+        {% for url, records in group_by_url(stats(servers[0]).plays) %}
+        <tr>
+            <td>#{{loop.index}}</td>
+            <td>{{len(records)}}</td>
+            <td>
+                <a href="{{records[0].url}}">
+                    <img src="https://img.youtube.com/vi/{{ video_id(records[0].url) }}/default.jpg">
+                    {% for record in unique_play_texts(records) %}
+                    <span>"{{record.request_text}}"</span>
+                    {% endfor %}
+                </a>
+            </td>
+            <td>
+                {% for record in records %}
+                <div>"{{record.queued_by}}"</div>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

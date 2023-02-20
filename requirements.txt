@@ -3,3 +3,4 @@ pytube
 regex
 yt-dlp
 PyNaCl
+flask
