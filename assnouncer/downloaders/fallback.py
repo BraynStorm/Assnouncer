@@ -43,7 +43,7 @@ class FallbackDownloader(BaseDownloader):
             f"{url}"
         )
 
-        process = await asyncio.create_subprocess_shell(cmd, )
+        process = await asyncio.create_subprocess_shell(cmd)
         if await process.wait() != 0:
             return False
 

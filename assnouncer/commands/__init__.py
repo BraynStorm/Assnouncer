@@ -14,5 +14,6 @@ import assnouncer.commands.settheme
 import assnouncer.commands.dumb
 import assnouncer.commands.apricot
 import assnouncer.commands.math
+import assnouncer.commands.update
 
 from assnouncer.commands.base import BaseCommand

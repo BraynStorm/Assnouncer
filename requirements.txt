@@ -1,4 +1,5 @@
-discord==1.7.3
-pytube==12.0.0
-regex==2022.3.15
-yt-dlp==2022.4.8
+discord
+pytube
+regex
+yt-dlp
+PyNaCl
