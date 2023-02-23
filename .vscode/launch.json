@@ -13,6 +13,10 @@
             "env": {
                 "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}"
             },
+            "args": [
+                "--guild",
+                "1076269883865702460"
+            ],
             "console": "integratedTerminal",
             "justMyCode": false
         }
