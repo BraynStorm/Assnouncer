@@ -8,7 +8,7 @@ import pickle
 import json
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Play:
     url: str
     played_on: datetime

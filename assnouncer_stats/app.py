@@ -1,18 +1,22 @@
-from flask import Flask, Response
-from dataclasses import dataclass
-from pathlib import Path
-from assnouncer.stats import Play, Stats
-
 import pickle
+from collections import Counter
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Callable
 
+from flask import Flask, Response
+
+from assnouncer.stats import Play, Stats
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 
-@dataclass
-class RankedPlays:
-    top_song_today: Play
+@dataclass(frozen=True)
+class CountedPlay:
+    play: Play
+    count: int
 
 
 def stats_json_string(server: int) -> str:
@@ -40,8 +44,81 @@ def group_by_url(plays: list[Play]) -> list[tuple[int, list[Play]]]:
     return grouped
 
 
-def unique_play_texts(records: list[Play]) -> list[str]:
-    return records
+def all_players(plays: list[Play]) -> set[str]:
+    return {play.queued_by for play in plays}
+
+
+def counted_players(plays: list[Play]) -> list[CountedPlay]:
+    c = Counter([play.queued_by for play in plays])
+    return list(map(CountedPlay, c.most_common(None)))
+
+
+def filter_this_month(play: Play):
+    now = datetime.now()
+    played_on = play.played_on
+    return played_on.year == now.year and played_on.month == now.month
+
+
+def filter_today(play: Play):
+    now = datetime.now()
+    played_on = play.played_on
+    return (
+        played_on.year == now.year
+        and played_on.month == now.month
+        and played_on.day == now.day
+    )
+
+
+def filter_any(play: Play) -> bool:
+    return True
+
+
+def second_element(x):
+    return x[1]
+
+
+def filter_user_this_month(record: Play, user: str) -> bool:
+    now = datetime.now()
+    played_on = record.played_on
+    return (
+        played_on.year == now.year
+        and played_on.month == now.month
+        and record.queued_by == user
+    )
+
+
+def top_n_urls(
+    records: list[Play],
+    n: int = 10,
+    filter: str | Callable[[Play], bool] | None = None,
+    *args,
+) -> list[tuple[str, int]]:
+    if isinstance(filter, str):
+        filter = "filter_" + filter
+        filter_func = globals()[filter]
+        assert callable(filter_func)
+    elif callable(filter):
+        filter_func = filter
+    else:
+        filter_func = filter_any
+
+    import builtins
+
+    filtered_records = builtins.filter(lambda x: filter_func(x, *args), records)
+
+    urls = [record.url for record in filtered_records]
+    counts = Counter(urls)
+    return sorted(counts.most_common(n), key=second_element, reverse=True)
+
+
+def unique_play_texts(records: list[Play]) -> list[tuple[str, int]]:
+    counts = Counter([record.request_text for record in records])
+    return list(sorted(counts.most_common(None), key=second_element, reverse=True))
+
+
+def unique_players(records: list[Play]) -> list[tuple[str, int]]:
+    counts = Counter([record.queued_by for record in records])
+    return list(sorted(counts.most_common(None), key=second_element, reverse=True))
 
 
 def video_id(url: str) -> str:
@@ -52,7 +129,7 @@ def video_id(url: str) -> str:
 
 
 def define_routes():
-    from flask import render_template, redirect
+    from flask import redirect, render_template
 
     @app.route("/", methods=["GET"])
     def root():
@@ -64,8 +141,43 @@ def define_routes():
             int(file_path.stem.removeprefix("asstats-"))
             for file_path in Path("..").glob("asstats-*.pickle")
         ]
+        records = stats(servers[0]).plays
+        themes = [record for record in records if "'s theme" in record.request_text]
+        records = [
+            record for record in records if "'s theme" not in record.request_text
+        ]
+        users = {record.queued_by for record in records}
 
-        return render_template("index.jinja", servers=servers, len=len, **globals())
+        grouped_records = group_by_url(records)
+
+        return render_template(
+            "index.jinja",
+            servers=servers,
+            themes=themes,
+            records=records,
+            users=users,
+            grouped_records=grouped_records,
+            len=len,
+            **globals(),
+        )
+
+    @app.route("/ui/all", methods=["GET"])
+    def ui_all():
+        servers = [
+            int(file_path.stem.removeprefix("asstats-"))
+            for file_path in Path("..").glob("asstats-*.pickle")
+        ]
+        records = [
+            record
+            for record in stats(servers[0]).plays
+            if "'s theme" not in record.request_text
+        ]
+        return render_template(
+            "all.jinja",
+            records=records,
+            len=len,
+            **globals(),
+        )
 
     @app.route("/v1/stats/<int:server>/raw")
     def v1_stats_server_raw(server: int):

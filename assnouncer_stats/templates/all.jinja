@@ -1,0 +1,58 @@
+{% extends 'base.jinja '%}
+{% block content %}
+<style>
+html,
+    body {
+        font-family: Consolas;
+    }
+
+    table,
+    td {
+        box-sizing: border-box;
+        border-collapse: collapse;
+        border: 1px solid black;
+    }
+
+    td {
+        padding: 0 0.2em 0 0.2em;
+    }
+</style>
+<h2 class="headline">All time</h2>
+<table>
+    <thead>
+        <tr>
+            <td>#</td>
+            <td>Played</td>
+            <td>Song</td>
+            <td>
+                <pre>play ...</pre>
+            </td>
+        </tr>
+    </thead>
+    <tbody>
+        {% for url, records in group_by_url(records) %}
+        <tr>
+            <td>#{{loop.index}}</td>
+            <td>{{len(records)}}</td>
+            <td>
+                <a href="{{records[0].url}}">
+                    <img src="https://img.youtube.com/vi/{{ video_id(records[0].url) }}/default.jpg">
+                </a>
+            </td>
+            <td>
+                <a href="{{records[0].url}}">
+                    {% for text, count in unique_play_texts(records) %}
+                    <span>"{{text|e}}": {{count}}</span>
+                    {% endfor %}
+                </a>
+            </td>
+            <td>
+                {% for player, count in unique_players(records) %}
+                <div>{{player}}: {{count}}</div>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

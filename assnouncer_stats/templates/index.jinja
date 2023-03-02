@@ -7,18 +7,7 @@
         font-family: Consolas;
     }
 
-    table,
-    td {
-        box-sizing: border-box;
-        border-collapse: collapse;
-        border: 1px solid black;
-    }
-
-    td {
-        padding: 0 0.2em 0 0.2em;
-    }
-
-    .card.container {
+    .card-container {
         display: flex;
         ;
         flex-flow: row wrap;
@@ -30,47 +19,68 @@
         max-width: 200px;
         max-height: 300px;
         border-radius: 10px;
+        border: 1px solid rgb(182, 160, 160);
+        margin: 5px;
+        flex-direction: column;
+        display: flex;
+    }
+
+    .count {
+        text-align: right;
+
+    }
+
+    .spot {
+        text-align: center;
+    }
+
+    .headline {
+        text-align: center;
     }
 </style>
 
-<div class="card container">
-    {% for url, records in group_by_url(stats(servers[0]).plays)[:5] %}
-    {# <iframe class="card youtube" width="200" height="300" src="{{records[0].url}}" title="YouTube video player"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen></iframe> #}
+<h2 class="headline">Today's top 10</h2>
+<div class="card-container">
+    {% for url, count in top_n_urls(records, 10, 'today') %}
+    <div class="card">
+        <span class="spot">#{{loop.index}}</span>
+        <a href="{{url}}">
+            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+        </a>
+        <span class="count">{{count}} plays</span>
+    </div>
     {% endfor%}
 </div>
 
+<hr>
+<h2 class="headline">This month's top 10</h2>
+<div class="card-container">
+    {% for url, count in top_n_urls(records, 10, 'this_month') %}
+    <div class="card">
+        <span class="spot">#{{loop.index}}</span>
+        <a href="{{url}}">
+            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+        </a>
+        <span class="count">{{count}} plays</span>
+    </div>
+    {% endfor%}
+</div>
 
-<table>
-    <thead>
-    <tr>
-    <td>#</td>
-    <td>Played</td>
-    <td>Song</td>
-    </tr>
-    </thead>
-    <tbody>
-        {% for url, records in group_by_url(stats(servers[0]).plays) %}
-        <tr>
-            <td>#{{loop.index}}</td>
-            <td>{{len(records)}}</td>
-            <td>
-                <a href="{{records[0].url}}">
-                    <img src="https://img.youtube.com/vi/{{ video_id(records[0].url) }}/default.jpg">
-                    {% for record in unique_play_texts(records) %}
-                    <span>"{{record.request_text}}"</span>
-                    {% endfor %}
-                </a>
-            </td>
-            <td>
-                {% for record in records %}
-                <div>"{{record.queued_by}}"</div>
-                {% endfor %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<hr>
+
+{% for user in users %}
+<h2 class="headline">{{user}}'s top 3 this month</h2>
+<div class="card-container">
+    {% for url, count in top_n_urls(records, 3, 'user_this_month', user) %}
+    <div class="card">
+        <span class="spot">#{{loop.index}}</span>
+        <a href="{{url}}">
+            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+        </a>
+        <span class="count">{{count}} plays</span>
+    </div>
+    {% endfor%}
+</div>
+{% endfor %}
+
 {% endblock %}
