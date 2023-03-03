@@ -59,6 +59,13 @@ def filter_this_month(play: Play):
     return played_on.year == now.year and played_on.month == now.month
 
 
+def filter_last_month(play: Play):
+    now = datetime.now()
+    last_month = datetime(now.year, now.month - 1, 1)
+    played_on = play.played_on
+    return played_on.year == last_month.year and played_on.month == last_month.month
+
+
 def filter_today(play: Play):
     now = datetime.now()
     played_on = play.played_on
@@ -87,12 +94,21 @@ def filter_user_this_month(record: Play, user: str) -> bool:
     )
 
 
-def top_n_urls(
-    records: list[Play],
-    n: int = 10,
-    filter: str | Callable[[Play], bool] | None = None,
+def filter_user_last_month(record: Play, user: str) -> bool:
+    now = datetime.now()
+    last_month = datetime(now.year, now.month - 1, 1)
+    played_on = record.played_on
+    return (
+        played_on.year == last_month.year
+        and played_on.month == last_month.month
+        and record.queued_by == user
+    )
+
+
+def get_filter(
+    filter: Callable[[Play], bool] | str | None = None,
     *args,
-) -> list[tuple[str, int]]:
+) -> Callable[[Play], bool]:
     if isinstance(filter, str):
         filter = "filter_" + filter
         filter_func = globals()[filter]
@@ -102,8 +118,28 @@ def top_n_urls(
     else:
         filter_func = filter_any
 
+    return filter_func
+
+
+def plays_by_user(
+    records: list[Play], filter: Callable[[Play], bool] | str | None
+) -> list[tuple[str, int]]:
     import builtins
 
+    records = builtins.filter(get_filter(filter), records)
+    c = Counter([record.queued_by for record in records])
+    return c.most_common(None)
+
+
+def top_n_urls(
+    records: list[Play],
+    n: int = 10,
+    filter: str | Callable[[Play], bool] | None = None,
+    *args,
+) -> list[tuple[str, int]]:
+    import builtins
+
+    filter_func = get_filter(filter, *args)
     filtered_records = builtins.filter(lambda x: filter_func(x, *args), records)
 
     urls = [record.url for record in filtered_records]

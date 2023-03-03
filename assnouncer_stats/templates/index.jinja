@@ -1,44 +1,6 @@
 {% extends 'base.jinja '%}
 {% block content %}
 
-<style>
-    html,
-    body {
-        font-family: Consolas;
-    }
-
-    .card-container {
-        display: flex;
-        ;
-        flex-flow: row wrap;
-        max-width: 100vw;
-        justify-content: center;
-    }
-
-    .card {
-        max-width: 200px;
-        max-height: 300px;
-        border-radius: 10px;
-        border: 1px solid rgb(182, 160, 160);
-        margin: 5px;
-        flex-direction: column;
-        display: flex;
-    }
-
-    .count {
-        text-align: right;
-
-    }
-
-    .spot {
-        text-align: center;
-    }
-
-    .headline {
-        text-align: center;
-    }
-</style>
-
 <h2 class="headline">Today's top 10</h2>
 <div class="card-container">
     {% for url, count in top_n_urls(records, 10, 'today') %}
@@ -49,7 +11,7 @@
         </a>
         <span class="count">{{count}} plays</span>
     </div>
-    {% endfor%}
+    {% endfor %}
 </div>
 
 <hr>
@@ -63,15 +25,13 @@
         </a>
         <span class="count">{{count}} plays</span>
     </div>
-    {% endfor%}
+    {% endfor %}
 </div>
 
 <hr>
-
-{% for user in users %}
-<h2 class="headline">{{user}}'s top 3 this month</h2>
+<h2 class="headline">Last month's top 10</h2>
 <div class="card-container">
-    {% for url, count in top_n_urls(records, 3, 'user_this_month', user) %}
+    {% for url, count in top_n_urls(records, 10, 'last_month') %}
     <div class="card">
         <span class="spot">#{{loop.index}}</span>
         <a href="{{url}}">
@@ -79,8 +39,64 @@
         </a>
         <span class="count">{{count}} plays</span>
     </div>
-    {% endfor%}
+    {% endfor %}
+</div>
+
+<hr>
+{% for user in users %}
+<h2 class="headline">{{user}}'s top 3</h2>
+<div class="two-column-container">
+    <div>
+        <h3>This month</h3>
+        <div class="card-container">
+            {% for url, count in top_n_urls(records, 3, 'user_this_month', user) %}
+            <div class="card">
+                <span class="spot">#{{loop.index}}</span>
+                <a href="{{url}}">
+                    <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+                </a>
+                <span class="count">{{count}} plays</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div>
+        <h3>Last month</h3>
+        <div class="card-container">
+            {% for url, count in top_n_urls(records, 3, 'user_last_month', user) %}
+            <div class="card">
+                <span class="spot">#{{loop.index}}</span>
+                <a href="{{url}}">
+                    <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+                </a>
+                <span class="count">{{count}} plays</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 {% endfor %}
 
+<hr>
+<h2 class="headline">Top DJs</h2>
+<div class="two-column-container">
+    <div>
+        <h3 class="headline">This month</h3>
+        {% for user, plays in plays_by_user(records, "this_month") %}
+        <div class="two-column-container">
+            <div>{{user}}</div>
+            <div>{{plays}} songs</div>
+        </div>
+        {% endfor %}
+    </div>
+    <div>
+        <h3 class="headline">Last month</h3>
+        {% for user, plays in plays_by_user(records, "last_month") %}
+        <div class="two-column-container">
+            <div>{{user}}</div>
+            <div>{{plays}} songs</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

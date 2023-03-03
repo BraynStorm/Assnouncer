@@ -1,0 +1,47 @@
+html,
+body {
+    font-family: Consolas;
+}
+
+.card-container {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+}
+
+.two-column-container {
+    display: flex;
+}
+
+.two-column-container h3 {
+    text-align: center;
+}
+
+.two-column-container>* {
+    width: 50%;
+    margin: 0 1em 0 1em;
+}
+
+.card {
+    max-width: 200px;
+    max-height: 300px;
+    border-radius: 10px;
+    border: 1px solid rgb(182, 160, 160);
+    margin: 5px;
+    flex-direction: column;
+    display: flex;
+    box-shadow: 0 7px 5px rgba(71, 92, 99, 0.267);
+}
+
+.count {
+    text-align: right;
+
+}
+
+.spot {
+    text-align: center;
+}
+
+.headline {
+    text-align: center;
+}
