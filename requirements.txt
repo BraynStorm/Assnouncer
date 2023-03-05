@@ -4,3 +4,4 @@ regex
 yt-dlp
 PyNaCl
 flask
+requests

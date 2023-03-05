@@ -15,7 +15,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 @dataclass(frozen=True)
 class CountedPlay:
-    play: Play
+    url: str
     count: int
 
 
@@ -28,7 +28,9 @@ def stats(server: int) -> "Stats":
     with open(f"../asstats-{server}.pickle", "rb") as file:
         stats = pickle.load(file)
         assert isinstance(stats, Stats)
-        return stats
+        return Stats(
+            list(filter(lambda play: "'s theme" not in play.request_text, stats.plays))
+        )
 
 
 def group_by_url(plays: list[Play]) -> list[tuple[int, list[Play]]]:
@@ -46,11 +48,6 @@ def group_by_url(plays: list[Play]) -> list[tuple[int, list[Play]]]:
 
 def all_players(plays: list[Play]) -> set[str]:
     return {play.queued_by for play in plays}
-
-
-def counted_players(plays: list[Play]) -> list[CountedPlay]:
-    c = Counter([play.queued_by for play in plays])
-    return list(map(CountedPlay, c.most_common(None)))
 
 
 def filter_this_month(play: Play):
@@ -221,6 +218,14 @@ def define_routes():
         return Response(
             stats_json_string(server), 200, headers={"Content-Type": "application/json"}
         )
+
+    @app.route("/v1/stats/<int:server>/top_n/<string:filter>", defaults=dict(top_n=10))
+    @app.route("/v1/stats/<int:server>/top_n/<string:filter>/<int:top_n>")
+    def v1_stats_server_top_n(server: int, filter: str, top_n: int):
+        server = int(server)
+        s = stats(server)
+        results = top_n_urls(s.plays, top_n, filter)
+        return results
 
 
 define_routes()

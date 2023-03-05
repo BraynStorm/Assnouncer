@@ -1,6 +1,10 @@
 {% extends 'base.jinja '%}
 {% block content %}
 
+<div id="synth">
+    <div class="synth"> </div>
+</div>
+
 <h2 class="headline">Today's top 10</h2>
 <div class="card-container">
     {% for url, count in top_n_urls(records, 10, 'today') %}
