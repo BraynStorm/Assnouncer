@@ -2,5 +2,6 @@ discord
 pytube
 regex
 yt-dlp
+spotdl
 numpy
 PyNaCl
