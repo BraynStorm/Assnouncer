@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Assnouncer",
+            "name": "Assnouncer (WoWHead)",
             "type": "python",
             "request": "launch",
             "module": "assnouncer",
@@ -13,8 +13,28 @@
             "env": {
                 "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}"
             },
+            "args": [
+                "949960999979606077"
+            ],
             "console": "integratedTerminal",
             "justMyCode": false
-        }
+        },
+        {
+            "name": "Stats",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "assnouncer_stats/app.py",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [
+                "run",
+                "--no-debugger",
+                "--no-reload"
+            ],
+            "jinja": true,
+            "justMyCode": true
+        },
     ]
 }
