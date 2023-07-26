@@ -1,0 +1,47 @@
+{% extends 'base.jinja '%}
+{% block content %}
+"Blast from the past!"
+"The newest play from every URL"
+
+<table class="headline">
+    <thead>
+        <td>URL</td>
+        <td>Text</td>
+        <td>Last played on</td>
+        <td>Last played by</td>
+    </thead>
+    <tbody>
+        {% for play in oldest_plays %}
+        <tr>
+            <td>
+                <a href="{{play.url}}">
+                    <img src="https://img.youtube.com/vi/{{ video_id(play.url) }}/default.jpg">
+                </a>
+            </td>
+            <td>{{play.request_text}}</td>
+            <td>{{play.queued_on}}</td>
+            <td>{{play.queued_by}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<style>
+    html,
+    body {
+        font-family: Consolas;
+    }
+
+    table,
+    td {
+        box-sizing: border-box;
+        border-collapse: collapse;
+        border: 1px solid black;
+    }
+
+    td {
+        padding: 0 0.2em 0 0.2em;
+    }
+</style>
+
+{% endblock %}

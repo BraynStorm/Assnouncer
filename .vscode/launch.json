@@ -28,13 +28,16 @@
                 "FLASK_APP": "assnouncer_stats/app.py",
                 "FLASK_DEBUG": "1"
             },
+            "cwd": "${workspaceFolder}",
             "args": [
                 "run",
                 "--no-debugger",
-                "--no-reload"
+                "--no-reload",
+                "--port=8010",
+                "--host=0.0.0.0"
             ],
             "jinja": true,
-            "justMyCode": true
+            "justMyCode": true,
         },
     ]
 }

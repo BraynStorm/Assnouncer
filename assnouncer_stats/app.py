@@ -1,5 +1,5 @@
 import pickle
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -20,12 +20,12 @@ class CountedPlay:
 
 
 def stats_json_string(server: int) -> str:
-    with open(f"../asstats-{server}.json", "r") as file:
+    with open(f"./asstats-{server}.json", "r") as file:
         return file.read()
 
 
 def stats(server: int) -> "Stats":
-    with open(f"../asstats-{server}.pickle", "rb") as file:
+    with open(f"./asstats-{server}.pickle", "rb") as file:
         stats = pickle.load(file)
         assert isinstance(stats, Stats)
         return Stats(
@@ -33,17 +33,31 @@ def stats(server: int) -> "Stats":
         )
 
 
-def group_by_url(plays: list[Play]) -> list[tuple[int, list[Play]]]:
-    from collections import defaultdict
-
+def group_by_url(plays: list[Play]) -> dict[str, list[Play]]:
     group_by_url: dict[str, list[Play]] = defaultdict(list)
     for play in plays:
         if "'s theme" not in play.request_text:
             group_by_url[play.url].append(play)
 
-    grouped = list(zip(map(len, group_by_url.values()), group_by_url.values()))
+    return group_by_url
+
+
+def group_by_url_by_plays(plays: list[Play]) -> list[tuple[int, list[Play]]]:
+    by_url = group_by_url(plays)
+
+    grouped = list(zip(map(len, by_url.values()), by_url.values()))
     grouped.sort(key=lambda k: k[0], reverse=True)
     return grouped
+
+
+def oldest_plays_for_urls(plays: list[Play]) -> list[Play]:
+    by_url = group_by_url(plays)
+
+    newest_play_for_url = [
+        max(plays, key=lambda play: play.queued_on) for plays in by_url.values()
+    ]
+    newest_play_for_url.sort(key=lambda k: k.queued_on)
+    return newest_play_for_url
 
 
 def all_players(plays: list[Play]) -> set[str]:
@@ -161,6 +175,13 @@ def video_id(url: str) -> str:
         return url[url.index("/") + 1 :]
 
 
+def get_servers() -> list[int]:
+    return [
+        int(file_path.stem.removeprefix("asstats-"))
+        for file_path in Path(".").glob("asstats-*.pickle")
+    ]
+
+
 def define_routes():
     from flask import redirect, render_template
 
@@ -170,10 +191,7 @@ def define_routes():
 
     @app.route("/ui", methods=["GET"])
     def ui_index():
-        servers = [
-            int(file_path.stem.removeprefix("asstats-"))
-            for file_path in Path("..").glob("asstats-*.pickle")
-        ]
+        servers = get_servers()
         records = stats(servers[0]).plays
         themes = [record for record in records if "'s theme" in record.request_text]
         records = [
@@ -181,7 +199,7 @@ def define_routes():
         ]
         users = {record.queued_by for record in records}
 
-        grouped_records = group_by_url(records)
+        grouped_records = group_by_url_by_plays(records)
 
         return render_template(
             "index.jinja",
@@ -196,10 +214,7 @@ def define_routes():
 
     @app.route("/ui/all", methods=["GET"])
     def ui_all():
-        servers = [
-            int(file_path.stem.removeprefix("asstats-"))
-            for file_path in Path("..").glob("asstats-*.pickle")
-        ]
+        servers = get_servers()
         records = [
             record
             for record in stats(servers[0]).plays
@@ -211,6 +226,13 @@ def define_routes():
             len=len,
             **globals(),
         )
+
+    @app.route("/ui/blast", methods=["GET"])
+    def ui_blast():
+        servers = get_servers()
+        records = stats(servers[0]).plays
+        oldest_plays = oldest_plays_for_urls(records)
+        return render_template("blast.jinja", oldest_plays=oldest_plays, **globals())
 
     @app.route("/v1/stats/<int:server>/raw")
     def v1_stats_server_raw(server: int):
