@@ -2,6 +2,7 @@ discord
 pytube
 regex
 yt-dlp
+numpy
 PyNaCl
 flask
 requests

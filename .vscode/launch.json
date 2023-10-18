@@ -5,19 +5,49 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Assnouncer (MeinKampf)",
+            "type": "python",
+            "request": "launch",
+            "module": "assnouncer",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}",
+            },
+            "args": [
+                "642747343208185857"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+        },
+        {
+            "name": "Assnouncer (ОП! Наздраве!)",
+            "type": "python",
+            "request": "launch",
+            "module": "assnouncer",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}",
+            },
+            "args": [
+                "1076269883865702460"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+        },
+        {
             "name": "Assnouncer (WoWHead)",
             "type": "python",
             "request": "launch",
             "module": "assnouncer",
             "cwd": "${workspaceFolder}",
             "env": {
-                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}"
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}",
             },
             "args": [
-                "949960999979606077"
+                "949960999979606077",
             ],
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
         },
         {
             "name": "Stats",
@@ -26,7 +56,7 @@
             "module": "flask",
             "env": {
                 "FLASK_APP": "assnouncer_stats/app.py",
-                "FLASK_DEBUG": "1"
+                "FLASK_DEBUG": "1",
             },
             "cwd": "${workspaceFolder}",
             "args": [
@@ -34,25 +64,10 @@
                 "--no-debugger",
                 "--no-reload",
                 "--port=8010",
-                "--host=0.0.0.0"
+                "--host=0.0.0.0",
             ],
             "jinja": true,
             "justMyCode": true,
-        },
-        {
-            "name": "Assnouncer (MeinKampf)",
-            "type": "python",
-            "request": "launch",
-            "module": "assnouncer",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}"
-            },
-            "args": [
-                "642747343208185857"
-            ],
-            "console": "integratedTerminal",
-            "justMyCode": false
         },
     ]
 }
