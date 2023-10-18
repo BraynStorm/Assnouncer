@@ -39,5 +39,20 @@
             "jinja": true,
             "justMyCode": true,
         },
+        {
+            "name": "Assnouncer (MeinKampf)",
+            "type": "python",
+            "request": "launch",
+            "module": "assnouncer",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}"
+            },
+            "args": [
+                "642747343208185857"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
     ]
 }

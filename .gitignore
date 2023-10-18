@@ -3,6 +3,8 @@ themes/
 downloads/
 token
 asstats-*
+/youtube-api-cache.pickle
+/youtube-api-key.txt
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode

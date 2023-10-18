@@ -116,11 +116,16 @@ body {
 
 .count {
     text-align: right;
-
 }
 
 .spot {
     text-align: center;
+}
+
+.title {
+    font-size: 70%;
+    flex-wrap: wrap;
+    text-wrap: stable;
 }
 
 .headline {

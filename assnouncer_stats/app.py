@@ -1,22 +1,33 @@
 import pickle
+import requests
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from flask import Flask, Response
 
 from assnouncer.stats import Play, Stats
 
+requests.packages.urllib3.util.connection.HAS_IPV6 = False
+
+
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+
+YOUTUBE_API_KEY = Path("youtube-api-key.txt").read_text().strip()
 
 
 @dataclass(frozen=True)
 class CountedPlay:
     url: str
     count: int
+
+
+def url_normalize(url: str) -> str:
+    return url.replace("https://www.", "https://")
 
 
 def stats_json_string(server: int) -> str:
@@ -37,7 +48,8 @@ def group_by_url(plays: list[Play]) -> dict[str, list[Play]]:
     group_by_url: dict[str, list[Play]] = defaultdict(list)
     for play in plays:
         if "'s theme" not in play.request_text:
-            group_by_url[play.url].append(play)
+            url = url_normalize(play.url)
+            group_by_url[url].append(play)
 
     return group_by_url
 
@@ -153,7 +165,7 @@ def top_n_urls(
     filter_func = get_filter(filter, *args)
     filtered_records = builtins.filter(lambda x: filter_func(x, *args), records)
 
-    urls = [record.url for record in filtered_records]
+    urls = [url_normalize(record.url) for record in filtered_records]
     counts = Counter(urls)
     return sorted(counts.most_common(n), key=second_element, reverse=True)
 
@@ -173,6 +185,52 @@ def video_id(url: str) -> str:
         return url[url.index("=") + 1 :]
     except:
         return url[url.index("/") + 1 :]
+
+
+def video_title(url: str, use_cache=True) -> str:
+    response_json = None
+
+    if use_cache:
+        cache: dict[str, Any]
+        p = Path("youtube-api-cache.pickle")
+        if p.exists():
+            cache = pickle.loads(p.read_bytes())
+        else:
+            cache = dict()
+
+        try:
+            response_json = cache[url]
+        except KeyError:
+            pass
+
+    if response_json is None:
+        vid_id = video_id(url)
+        api_url = (
+            "https://youtube.googleapis.com/youtube/v3/videos?part=snippet"
+            f"&id={vid_id}&key={YOUTUBE_API_KEY}"
+        )
+
+        # Retry 2 times
+        for _ in range(3):
+            r = requests.get(api_url, timeout=1)
+            response_json = r.json()
+            if r.status_code != 200:
+                print("Youtube API limit hit.", r.content.decode("utf-8"))
+                if r.status_code == 403:
+                    import time
+
+                    time.sleep(0.3)
+                return ""
+
+        if use_cache:
+            cache[url] = response_json
+            p.write_bytes(pickle.dumps(cache))
+
+    try:
+        return response_json["items"][0]["snippet"]["title"]
+    except:
+        print(f"No title for {url} - {response_json['items']}")
+        return "<blocked>"
 
 
 def get_servers() -> list[int]:
@@ -197,7 +255,13 @@ def define_routes():
         records = [
             record for record in records if "'s theme" not in record.request_text
         ]
-        users = {record.queued_by for record in records}
+        # NOTE(bozho2):
+        #   After Discord updated the user format, now the users don't have the #XXXX suffix.
+        #   So Assnouncer just puts #0 at the ends of the usernames.
+        #   It's fugly to display it so we remove it
+        users = {
+            record.queued_by for record in records if record.queued_by.endswith("#0")
+        }
 
         grouped_records = group_by_url_by_plays(records)
 

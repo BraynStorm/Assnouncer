@@ -10,8 +10,9 @@
     {% for url, count in top_n_urls(records, 10, 'today') %}
     <div class="card">
         <span class="spot">#{{loop.index}}</span>
+        <span class="title">{{ video_title(url) }}</span>
         <a href="{{url}}">
-            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg" alt="{{ video_title(url) }}">
         </a>
         <span class="count">{{count}} plays</span>
     </div>
@@ -24,8 +25,9 @@
     {% for url, count in top_n_urls(records, 10, 'this_month') %}
     <div class="card">
         <span class="spot">#{{loop.index}}</span>
+        <span class="title">{{ video_title(url) }}</span>
         <a href="{{url}}">
-            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg" alt="{{ video_title(url) }}">
         </a>
         <span class="count">{{count}} plays</span>
     </div>
@@ -38,8 +40,9 @@
     {% for url, count in top_n_urls(records, 10, 'last_month') %}
     <div class="card">
         <span class="spot">#{{loop.index}}</span>
+        <span class="title">{{ video_title(url) }}</span>
         <a href="{{url}}">
-            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+            <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg" alt="{{ video_title(url) }}">
         </a>
         <span class="count">{{count}} plays</span>
     </div>
@@ -48,7 +51,8 @@
 
 <hr>
 {% for user in users %}
-<h2 class="headline">{{user}}'s top 3</h2>
+{# NOTE(bozho2): New usernames look like USERNAME#0 in Assnouncer. Strip the #0. #}
+<h2 class="headline">{{ user[:-2] }}'s top 3</h2>
 <div class="two-column-container">
     <div>
         <h3>This month</h3>
@@ -56,8 +60,9 @@
             {% for url, count in top_n_urls(records, 3, 'user_this_month', user) %}
             <div class="card">
                 <span class="spot">#{{loop.index}}</span>
+                <span class="title">{{ video_title(url) }}</span>
                 <a href="{{url}}">
-                    <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
+                    <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg" alt="{{ video_title(url) }}">
                 </a>
                 <span class="count">{{count}} plays</span>
             </div>
@@ -70,6 +75,7 @@
             {% for url, count in top_n_urls(records, 3, 'user_last_month', user) %}
             <div class="card">
                 <span class="spot">#{{loop.index}}</span>
+                <span class="title">{{ video_title(url) }}</span>
                 <a href="{{url}}">
                     <img src="https://img.youtube.com/vi/{{ video_id(url) }}/default.jpg">
                 </a>

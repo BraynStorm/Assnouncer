@@ -108,7 +108,7 @@ class Assnouncer(Client):
             music.play(
                 request.source,
                 reconnect_callback=self.reconnect_callback,
-                state_callback=self.skip_callback
+                state_callback=self.skip_callback,
             )
 
         return state
@@ -134,9 +134,11 @@ class Assnouncer(Client):
 
             coro = self.message(" ".join(parts), channel=request.channel)
 
+            uri = request.uri.replace("https://www.", "https://")
+
             stats.on_play_song(
                 stats.Play(
-                    url=request.uri,
+                    url=uri,
                     request_text=request.query,
                     played_on=datetime.now(),
                     queued_on=request.queued_on,
@@ -221,6 +223,8 @@ class Assnouncer(Client):
             self.thread.start()
 
     async def queue_song(self, request: Awaitable[SongRequest]):
+        await self.ensure_connected()
+
         self.song_queue.put(self.run_coroutine(request))
 
     async def play_theme(self, user: Member):
