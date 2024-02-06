@@ -186,6 +186,7 @@ class Assnouncer(Client):
             if self.voice is not None:
                 logger.info("Trying to reconnect to voice")
                 if await self.voice.potential_reconnect():
+                    self.voice.resume()
                     return self.voice
 
             logger.info(f"Connecting to {config.GUILD_ID}")
@@ -263,6 +264,21 @@ class Assnouncer(Client):
             return
 
         if message.author == self.user:
+            return
+
+        voice_state = message.author.voice
+        if (
+            voice_state is None
+            or self.voice.channel != voice_state.channel  # Not in the same voice
+            or voice_state.deaf  # Can't hear (by server)
+            or voice_state.self_deaf  # Can't hear (by themselves)
+        ):
+            # NOTE(bozho2):
+            #   Reject commands by people not in the voice channel of the bot
+            logger.info(
+                f"Ignoring command from user {message.author.name}"
+                " because they are not in the voice channel."
+            )
             return
 
         # TODO: Move this to asspp.parse or BaseCommand
