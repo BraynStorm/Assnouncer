@@ -233,24 +233,33 @@ def video_title(url: str, use_cache=True) -> str:
         return "<blocked>"
 
 
-def get_servers() -> list[int]:
+def get_all_servers() -> list[int]:
     return [
         int(file_path.stem.removeprefix("asstats-"))
         for file_path in Path(".").glob("asstats-*.pickle")
     ]
 
 
+def get_server() -> int:
+    import os
+
+    server = os.environ.get("SERVER", None)
+    if server:
+        return int(server)
+    else:
+        return get_all_servers()[0]
+
+
 def define_routes():
     from flask import redirect, render_template
 
-    @app.route("/", methods=["GET"])
-    def root():
-        return redirect("/ui")
+    @app.route("/<int:server>/", methods=["GET"])
+    def root(server):
+        return redirect(f"/{server}/ui")
 
-    @app.route("/ui", methods=["GET"])
-    def ui_index():
-        servers = get_servers()
-        records = stats(servers[0]).plays
+    @app.route("/<int:server>/ui", methods=["GET"])
+    def ui_index(server: int):
+        records = stats(server).plays
         themes = [record for record in records if "'s theme" in record.request_text]
         records = [
             record for record in records if "'s theme" not in record.request_text
@@ -267,7 +276,7 @@ def define_routes():
 
         return render_template(
             "index.jinja",
-            servers=servers,
+            server=server,
             themes=themes,
             records=records,
             users=users,
@@ -276,27 +285,31 @@ def define_routes():
             **globals(),
         )
 
-    @app.route("/ui/all", methods=["GET"])
-    def ui_all():
-        servers = get_servers()
+    @app.route("/<int:server>/ui/all", methods=["GET"])
+    def ui_all(server: int):
         records = [
             record
-            for record in stats(servers[0]).plays
+            for record in stats(server).plays
             if "'s theme" not in record.request_text
         ]
         return render_template(
             "all.jinja",
+            server=server,
             records=records,
             len=len,
             **globals(),
         )
 
-    @app.route("/ui/blast", methods=["GET"])
-    def ui_blast():
-        servers = get_servers()
-        records = stats(servers[0]).plays
+    @app.route("/<int:server>/ui/blast", methods=["GET"])
+    def ui_blast(server):
+        records = stats(server).plays
         oldest_plays = oldest_plays_for_urls(records)
-        return render_template("blast.jinja", oldest_plays=oldest_plays, **globals())
+        return render_template(
+            "blast.jinja",
+            server=server,
+            oldest_plays=oldest_plays,
+            **globals(),
+        )
 
     @app.route("/v1/stats/<int:server>/raw")
     def v1_stats_server_raw(server: int):

@@ -30,7 +30,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for url, records in group_by_url(records) %}
+        {% for url, records in group_by_url(records).items() %}
         <tr>
             <td>#{{loop.index}}</td>
             <td>{{len(records)}}</td>

@@ -12,16 +12,16 @@
     {% block extra_body_start %}{% endblock %}
 
     <nav>
-        <a href="/ui">[Home]</a>
-        <a href="/ui/all">[All time]</a>
-        <a href="/ui/blast">[Blast from the Past]<a>
+        <a href="/{{ server }}/ui">[Home]</a>
+        <a href="/{{ server }}/ui/all">[All time]</a>
+        <a href="/{{ server }}/ui/blast">[Blast from the Past]<a>
     </nav>
 
     {% block content %}{% endblock %}
 
     {% block extra_body_end %}{% endblock %}
 
-    <link rel="stylesheet" href="static/stats.css">
+    <link rel="stylesheet" href="/static/stats.css">
 </body>
 
 </html>

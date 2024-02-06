@@ -44,7 +44,7 @@
                 "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}",
             },
             "args": [
-                "949960999979606077",
+                "--guild=949960999979606077",
             ],
             "console": "integratedTerminal",
             "justMyCode": false,

@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 
 from assnouncer import util
-from assnouncer import stats
 from assnouncer.asspp import String, Timestamp
 from assnouncer.commands.base import BaseCommand
 
