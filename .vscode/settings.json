@@ -6,5 +6,8 @@
         "--ignore-missing-imports",
         "--show-column-numbers",
         "--no-pretty",
+    ],
+    "cSpell.words": [
+        "spotipy"
     ]
 }

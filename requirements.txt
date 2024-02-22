@@ -6,3 +6,4 @@ numpy
 PyNaCl
 flask
 requests
+spotipy
