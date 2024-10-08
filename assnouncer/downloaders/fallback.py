@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import shlex
 
 from assnouncer.config import FFMPEG_DIR
 from assnouncer.asspp import Timestamp
@@ -26,20 +27,27 @@ class FallbackDownloader(BaseDownloader):
     ]
 
     @staticmethod
-    async def download(url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None) -> bool:
+    async def download(
+        url: str, filename: Path, start: Timestamp = None, stop: Timestamp = None
+    ) -> bool:
         filename_ns = filename.with_suffix("")
+
+        ytdlp_filename = shlex.quote(f"{filename_ns}.%(ext)s")
+        maybe_ffmpeg_loc = (
+            f"--ffmpeg-location {shlex.quote(FFMPEG_DIR)}" if FFMPEG_DIR else ""
+        )
 
         cmd = (
             f"yt-dlp "
             f"-x "
             f"-i "
             # f"-f ba "
-            f"-o {filename_ns}.%(ext)s "
+            f"-o {ytdlp_filename} "
             f"--http-chunk-size 10M "
             f"--buffer-size 32K "
             f"--audio-format opus "
             f"--audio-quality 0 "
-            f"--ffmpeg-location {FFMPEG_DIR} "
+            f"{maybe_ffmpeg_loc} "
             f"{url}"
         )
 

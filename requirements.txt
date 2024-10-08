@@ -5,3 +5,6 @@ yt-dlp
 spotdl
 numpy
 PyNaCl
+flask
+requests
+spotipy

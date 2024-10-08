@@ -209,7 +209,7 @@ class BaseCommand(metaclass=Descriptor):
 
         name = await BaseCommand.run(ass, message, expression.callable)
         if not isinstance(name, Identifier):
-            raise TypeError("Callable experssion must result in identifier")
+            raise TypeError("Callable expression must result in identifier")
 
         command_type = BaseCommand.find_command(name)
         if command_type is None:

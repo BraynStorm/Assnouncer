@@ -7,21 +7,32 @@ import logging
 from assnouncer import debug
 from assnouncer import util
 from assnouncer import config
+from assnouncer import stats
+from assnouncer.asspp import Timestamp
 from assnouncer.util import SongRequest
 from assnouncer.queue import Queue
 from assnouncer.commands import BaseCommand
 from assnouncer.audio import music
 from assnouncer.audio.music import MusicState
 
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Awaitable, List, TypeVar, TYPE_CHECKING
 from concurrent.futures import Future
 from threading import Event, Thread
 from asyncio import Lock
 from discord import (
-    Client, Game, TextChannel, Message,
-    Guild, VoiceClient, Member, VoiceState,
-    Intents, VoiceChannel, SpeakingState
+    Client,
+    Game,
+    TextChannel,
+    Message,
+    Guild,
+    VoiceClient,
+    Member,
+    VoiceState,
+    Intents,
+    VoiceChannel,
+    SpeakingState,
 )
 
 if TYPE_CHECKING:
@@ -97,7 +108,7 @@ class Assnouncer(Client):
             music.play(
                 request.source,
                 reconnect_callback=self.reconnect_callback,
-                state_callback=self.skip_callback
+                state_callback=self.skip_callback,
             )
 
         return state
@@ -122,6 +133,20 @@ class Assnouncer(Client):
                 parts.append(f"({request.query!r})")
 
             coro = self.message(" ".join(parts), channel=request.channel)
+
+            uri = request.uri.replace("https://www.", "https://")
+
+            stats.on_play_song(
+                stats.Play(
+                    url=uri,
+                    request_text=request.query,
+                    played_on=datetime.now(),
+                    queued_on=request.queued_on,
+                    queued_by=request.queued_by,
+                    start=(request.start or Timestamp(-1, -1, -1)).value,
+                    stop=(request.stop or Timestamp(-1, -1, -1)).value,
+                )
+            )
             self.run_coroutine(coro)
 
         self.skip_event.clear()
@@ -130,7 +155,7 @@ class Assnouncer(Client):
         music.play(
             request.source,
             reconnect_callback=self.reconnect_callback,
-            state_callback=self.theme_callback
+            state_callback=self.theme_callback,
         )
         self.run_coroutine(self.set_speaking(SpeakingState.none))
 
@@ -161,6 +186,7 @@ class Assnouncer(Client):
             if self.voice is not None:
                 logger.info("Trying to reconnect to voice")
                 if await self.voice.potential_reconnect():
+                    self.voice.resume()
                     return self.voice
 
             logger.info(f"Connecting to {config.GUILD_ID}")
@@ -189,7 +215,7 @@ class Assnouncer(Client):
             query="Assnouncer's theme",
             uri="Assnouncer's theme",
             channel=self.general,
-            sneaky=True
+            sneaky=True,
         )
         self.theme_queue.put(theme_request)
 
@@ -198,6 +224,8 @@ class Assnouncer(Client):
             self.thread.start()
 
     async def queue_song(self, request: Awaitable[SongRequest]):
+        await self.ensure_connected()
+
         self.song_queue.put(self.run_coroutine(request))
 
     async def play_theme(self, user: Member):
@@ -214,16 +242,13 @@ class Assnouncer(Client):
             source=source,
             query=f"{user}'s theme",
             uri=f"{user}'s theme",
-            channel=self.general
+            channel=self.general,
         )
 
         self.theme_queue.put(request)
 
     async def on_voice_state_update(
-        self,
-        member: Member,
-        before: VoiceState,
-        after: VoiceState
+        self, member: Member, before: VoiceState, after: VoiceState
     ):
         if member == self.user or member.guild != self.server:
             return
@@ -239,6 +264,21 @@ class Assnouncer(Client):
             return
 
         if message.author == self.user:
+            return
+
+        voice_state = message.author.voice
+        if (
+            voice_state is None
+            or self.voice.channel != voice_state.channel  # Not in the same voice
+            or voice_state.deaf  # Can't hear (by server)
+            or voice_state.self_deaf  # Can't hear (by themselves)
+        ):
+            # NOTE(bozho2):
+            #   Reject commands by people not in the voice channel of the bot
+            logger.info(
+                f"Ignoring command from user {message.author.name}"
+                " because they are not in the voice channel."
+            )
             return
 
         # TODO: Move this to asspp.parse or BaseCommand
