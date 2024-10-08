@@ -182,9 +182,9 @@ def unique_players(records: list[Play]) -> list[tuple[str, int]]:
 
 def video_id(url: str) -> str:
     try:
-        return url[url.index("=") + 1:]
+        return url[url.index("=") + 1 :]
     except:
-        return url[url.index("/") + 1:]
+        return url[url.index("/") + 1 :]
 
 
 def video_title(url: str, use_cache=True) -> str:
